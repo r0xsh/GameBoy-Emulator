@@ -1,0 +1,6 @@
+[package]
+name = "gameboy"
+version = "0.1.0"
+authors = ["Antoine BAGNAUD <bagnaud.antoine@gmail.com>"]
+
+[dependencies]
