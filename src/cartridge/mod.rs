@@ -6,6 +6,7 @@ use std::io;
 pub struct Cartridge(pub Vec<u8>);
 
 impl Cartridge {
+
     /// Load rom file
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Cartridge> {
         let mut rom: Vec<u8> = Vec::new();
@@ -27,5 +28,25 @@ impl Cartridge {
         }
         a
     }
+
+    pub fn read_title(&self) -> String {
+        let mut title = String::with_capacity(16);
+        for letter in self.read_range(0x0134, 0x0142) {
+            if letter == 0 {
+                break;
+            }
+            title.push(letter as char)
+        }
+        title
+    }
+
+
 }
+
+#[test]
+fn get_name() {
+    let rom = Cartridge::new("./rom/tetris.gb").unwrap();
+    assert_eq!(rom.read_title(), "TETRIS")
+}
+
 
