@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 
-use std::fs::File;
-use std::io::Read;
+use std::env;
 
 mod cpu;
+mod cartridge;
+
+use cartridge::Cartridge;
 
 fn main()
 {
-    let mut rom: Vec<u8> = Vec::new();
-    let mut file=File::open("boot.bin").unwrap();
-    let _ = file.read_to_end(&mut rom);
-    println!("{:#x}", rom[0]);
+    let oui = Cartridge::new(env::args().nth(1).unwrap()).unwrap();
+    println!("{:?}", oui.read_range(0x0134, 0x0143));
 }
