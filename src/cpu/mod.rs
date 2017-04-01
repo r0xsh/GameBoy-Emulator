@@ -1,21 +1,19 @@
 enum Register8 {
-    A,
-    F,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L
+    A, F,
+    B, C,
+    D, E,
+    H, L
 }
 
 enum Register16 {
-    AF,
-    BC,
-    DE,
-    HL,
-    SP,
-    PC
+    AF, BC,
+    DE, HL,
+    SP, PC
+}
+
+enum Flag {
+    Z, N,
+    H, C
 }
 
 struct Cpu {
@@ -133,6 +131,21 @@ impl Cpu {
         }
     }
 
+    /// Set a flags
+    fn set_flag(&mut self, flag: Flag, set: bool) {
+        let f = self.get_8(Register8::F);
+        match (flag, set) {
+            (Flag::Z, true) => { self.set_8(Register8::F, (f | 0b10000000)) }
+            (Flag::N, true) => { self.set_8(Register8::F, (f | 0b01000000)) }
+            (Flag::H, true) => { self.set_8(Register8::F, (f | 0b00100000)) }
+            (Flag::C, true) => { self.set_8(Register8::F, (f | 0b00010000)) }
+            (Flag::Z, false) => { self.set_8(Register8::F, (f & 0b01111111)) }
+            (Flag::N, false) => { self.set_8(Register8::F, (f & 0b10111111)) }
+            (Flag::H, false) => { self.set_8(Register8::F, (f & 0b11011111)) }
+            (Flag::C, false) => { self.set_8(Register8::F, (f & 0b11101111)) }
+        }
+    }
+
 }
 
 #[test]
@@ -168,4 +181,27 @@ fn set_get() {
     assert_eq!(cpu.get_16(Register16::HL), 53_000);
     assert_eq!(cpu.get_16(Register16::SP), 54_000);
     assert_eq!(cpu.get_16(Register16::PC), 55_000);
+}
+
+#[test]
+fn flags() {
+    let mut cpu = Cpu::new();
+
+    cpu.set_flag(Flag::Z, true);
+    assert_eq!(cpu.get_8(Register8::F), 0b10000000);
+    cpu.set_flag(Flag::N, true);
+    assert_eq!(cpu.get_8(Register8::F), 0b11000000);
+    cpu.set_flag(Flag::H, true);
+    assert_eq!(cpu.get_8(Register8::F), 0b11100000);
+    cpu.set_flag(Flag::C, true);
+    assert_eq!(cpu.get_8(Register8::F), 0b11110000);
+
+    cpu.set_flag(Flag::Z, false);
+    assert_eq!(cpu.get_8(Register8::F), 0b01110000);
+    cpu.set_flag(Flag::N, false);
+    assert_eq!(cpu.get_8(Register8::F), 0b00110000);
+    cpu.set_flag(Flag::H, false);
+    assert_eq!(cpu.get_8(Register8::F), 0b00010000);
+    cpu.set_flag(Flag::C, false);
+    assert_eq!(cpu.get_8(Register8::F), 0b00000000);
 }
