@@ -12,6 +12,7 @@ pub enum Register8 {
     L,
 }
 
+#[derive(Copy, Clone)]
 pub enum Register16 {
     AF,
     BC,
@@ -140,6 +141,51 @@ impl Cpu {
             (Flag::C, false) => self.set_8(Register8::F, (f & 0b11101111)),
         }
     }
+
+    /// Inc 8bit register by 1
+    pub fn inc_8(&mut self, reg: Register8) {
+        match reg {
+            Register8::A => self.a += 1,
+            Register8::F => self.f += 1,
+            Register8::B => self.b += 1,
+            Register8::C => self.c += 1,
+            Register8::D => self.d += 1,
+            Register8::E => self.e += 1,
+            Register8::H => self.h += 1,
+            Register8::L => self.l += 1,
+        };
+    }
+
+    /// Inc 16bit register by 1
+    pub fn inc_16(&mut self, reg: Register16) {
+        let v: u16 = self.get_16(reg) + 1;
+        match reg {
+            Register16::AF => {
+                self.a = high_byte!(v);
+                self.f = low_byte!(v);
+            }
+            Register16::BC => {
+                self.b = high_byte!(v);
+                self.c = low_byte!(v);
+            }
+            Register16::DE => {
+                self.d = high_byte!(v);
+                self.e = low_byte!(v);
+            }
+            Register16::HL => {
+                self.h = high_byte!(v);
+                self.l = low_byte!(v);
+            }
+            Register16::SP => self.sp = v,
+            Register16::PC => self.pc = v,
+        }
+
+    }
+
+    /// Inc PC by x
+    pub fn inc_pc(&mut self, inc: u8) {
+        self.pc += inc as u16;
+    }
 }
 
 
@@ -203,6 +249,21 @@ fn set_get() {
     assert_eq!(cpu.get_16(Register16::HL), 53_000);
     assert_eq!(cpu.get_16(Register16::SP), 54_000);
     assert_eq!(cpu.get_16(Register16::PC), 55_000);
+
+    cpu.inc_16(Register16::AF);
+    cpu.inc_16(Register16::BC);
+    cpu.inc_16(Register16::DE);
+    cpu.inc_16(Register16::HL);
+    cpu.inc_16(Register16::SP);
+    cpu.inc_16(Register16::PC);
+    assert_eq!(cpu.get_16(Register16::AF), 50_001);
+    assert_eq!(cpu.get_16(Register16::BC), 51_001);
+    assert_eq!(cpu.get_16(Register16::DE), 52_001);
+    assert_eq!(cpu.get_16(Register16::HL), 53_001);
+    assert_eq!(cpu.get_16(Register16::SP), 54_001);
+    assert_eq!(cpu.get_16(Register16::PC), 55_001);
+
+
 }
 
 #[test]
