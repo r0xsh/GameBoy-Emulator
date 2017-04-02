@@ -2,6 +2,7 @@
 use std::env;
 
 #[macro_use]
+mod utils;
 mod gameboy;
 mod cpu;
 mod cartridge;
