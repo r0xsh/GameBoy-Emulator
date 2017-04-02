@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::io;
+use std::fmt;
 
 pub struct Cartridge(pub Vec<u8>);
 
@@ -12,6 +13,7 @@ impl Cartridge {
         let mut rom: Vec<u8> = Vec::new();
         let mut file = File::open(path)?;
         let _ = file.read_to_end(&mut rom)?;
+        println!("ROM LOADED");
         Ok(Cartridge(rom))
     }
 
@@ -29,9 +31,10 @@ impl Cartridge {
         a
     }
 
+    /// Read the rom's title
     pub fn read_title(&self) -> String {
         let mut title = String::with_capacity(16);
-        for letter in self.read_range(0x0134, 0x0142) {
+        for letter in self.read_range(0x0134, 0x0143) {
             if letter == 0 {
                 break;
             }
@@ -43,10 +46,25 @@ impl Cartridge {
 
 }
 
+
+impl fmt::Debug for Cartridge {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "=== ROM DEBUG ===\n\
+            > title game {}\n\
+            > cartridge type: {:#x}\n\
+            > ROM size: {:#x}\n\
+            > RAM size: {:#x}",
+            self.read_title(),
+            self.read_byte(0x0147),
+            self.read_byte(0x148),
+            self.read_byte(0x0149))
+    }
+}
+
 #[test]
 fn get_name() {
-    let rom = Cartridge::new("./rom/tetris.gb").unwrap();
-    assert_eq!(rom.read_title(), "TETRIS")
+    let rom = Cartridge::new("./rom/super_mario.gb").unwrap();
+    assert_eq!(rom.read_title(), "SUPER MARIOLAND");
 }
 
 
