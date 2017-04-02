@@ -52,5 +52,4 @@ fn read_write(){
     assert_eq!(mem.read_byte(0xffff), 0xff);
     mem.write_byte(0x0000, 0xde);
     assert_eq!(mem.read_byte(0x0000), 0xde);
-
 }

@@ -1,22 +1,25 @@
-use Cpu;
+use cpu::{Register16};
 use GameBoy;
 
+/// Iterate the ROM
 pub fn decode(gb: &mut GameBoy) {
     for i in 0..gb.cartridge.size() {
-        opcode_router(gb.cartridge.read_byte(i as u16), &mut gb.cpu);
+        opcode_router(gb.cartridge.read_byte(i as u16), gb);
     }
+    println!("{:?}", gb.cpu);
 }
 
-fn opcode_router(opcode: u8, _: &mut Cpu) {
+/// Map Opcode to function
+fn opcode_router(opcode: u8, gb: &mut GameBoy) {
     match opcode {
         0x00 => {}
-        0x31 => println!("oui"),
+        0x31 => { ld_sp_nn(gb) },
         _ => {}
     }
 }
 
-/// NOP 0x00
-fn nop(_: &mut Cpu) {}
-
 /// LD BC, nn 0x01
-fn ld_bc_nn(_: &mut Cpu) {}
+fn ld_sp_nn(gb: &mut GameBoy) {
+    let v: u16 = gb.cartridge.read_word(gb.cpu.get_16(Register16::PC) + 1);
+    gb.cpu.set_16(Register16::SP, v);
+}

@@ -35,6 +35,12 @@ impl Cartridge {
         self.0[addr as usize]
     }
 
+    pub fn read_word(&self, addr: u16) -> u16 {
+        let a = self.read_byte(addr);
+        let b = self.read_byte(addr + 1);
+        join_bytes!(b, a)
+    }
+
     /// Read a range of bytes from the rom
     pub fn read_range(&self, addr: (u16, u16)) -> Vec<u8> {
         let mut a: Vec<u8> = Vec::with_capacity((addr.1 - addr.0) as usize);
