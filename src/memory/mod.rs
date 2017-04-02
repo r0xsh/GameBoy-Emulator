@@ -8,14 +8,14 @@
  *
  */
 
-const MEMORY_SIZE: u16 = 0xffff;
+const MEMORY_SIZE: usize = 65536;
 
 pub struct Memory(Vec<u8>);
 
 impl Memory {
     /// Init a new memory unit
     pub fn new() -> Memory {
-        let mut mem: Vec<u8> = Vec::with_capacity(MEMORY_SIZE as usize);
+        let mut mem: Vec<u8> = Vec::with_capacity(MEMORY_SIZE);
         for _ in 0..MEMORY_SIZE {
             mem.push(0);
         }
@@ -48,4 +48,9 @@ fn read_write(){
     let mut mem = Memory::new();
     mem.write_byte(0xdeff, 0xb1);
     assert_eq!(mem.read_byte(0xdeff), 0xb1);
+    mem.write_byte(0xffff, 0xff);
+    assert_eq!(mem.read_byte(0xffff), 0xff);
+    mem.write_byte(0x0000, 0xde);
+    assert_eq!(mem.read_byte(0x0000), 0xde);
+
 }
