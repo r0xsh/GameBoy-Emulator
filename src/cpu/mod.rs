@@ -1,22 +1,24 @@
-enum Register8 {
+use std::fmt;
+
+pub enum Register8 {
     A, F,
     B, C,
     D, E,
     H, L
 }
 
-enum Register16 {
+pub enum Register16 {
     AF, BC,
     DE, HL,
     SP, PC
 }
 
-enum Flag {
+pub enum Flag {
     Z, N,
     H, C
 }
 
-struct Cpu {
+pub struct Cpu {
 
     /// Accumulator register
     a: u8,
@@ -52,7 +54,7 @@ macro_rules! join_bytes {
 impl Cpu {
 
     /// Init a new Cpu instance
-    fn new() -> Cpu {
+    pub fn new() -> Cpu {
         Cpu {
             a: 0x0,
             f: 0x0,
@@ -68,7 +70,7 @@ impl Cpu {
     }
 
     /// Get a 8bit value from register
-    fn get_8(&self, reg: Register8) -> u8 {
+    pub fn get_8(&self, reg: Register8) -> u8 {
         match reg {
             Register8::A => self.a,
             Register8::F => self.f,
@@ -82,7 +84,7 @@ impl Cpu {
     }
 
     /// Set a 8bit value to a register
-    fn set_8(&mut self, reg: Register8, v: u8) {
+    pub fn set_8(&mut self, reg: Register8, v: u8) {
         match reg {
             Register8::A => self.a = v,
             Register8::F => self.f = v,
@@ -96,7 +98,7 @@ impl Cpu {
     }
 
     /// Get a 16bit value from a register
-    fn get_16(&self, reg: Register16) -> u16 {
+    pub fn get_16(&self, reg: Register16) -> u16 {
         match reg {
             Register16::AF => { join_bytes!(self.a, self.f) }
             Register16::BC => { join_bytes!(self.b, self.c) }
@@ -108,7 +110,7 @@ impl Cpu {
     }
 
     /// Set a 16bit value to a register
-    fn set_16(&mut self, reg: Register16, v: u16) {
+    pub fn set_16(&mut self, reg: Register16, v: u16) {
         match reg {
             Register16::AF => {
                 self.a = high_byte!(v);
@@ -132,7 +134,7 @@ impl Cpu {
     }
 
     /// Set a flags
-    fn set_flag(&mut self, flag: Flag, set: bool) {
+    pub fn set_flag(&mut self, flag: Flag, set: bool) {
         let f = self.get_8(Register8::F);
         match (flag, set) {
             (Flag::Z, true) => { self.set_8(Register8::F, (f | 0b10000000)) }
@@ -146,6 +148,33 @@ impl Cpu {
         }
     }
 
+}
+
+
+impl fmt::Debug for Cpu {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "=== CPU DEBUG ===\n\
+            > A        <{:#x}> ({0})\n\
+            > F (flag) <{:#x}> ({1})\n\
+            > B        <{:#x}> ({2})\n\
+            > C        <{:#x}> ({3})\n\
+            > D        <{:#x}> ({4})\n\
+            > E        <{:#x}> ({5})\n\
+            > H        <{:#x}> ({6})\n\
+            > L        <{:#x}> ({7})\n\
+            > SP       <{:#x}> ({8})\n\
+            > PC       <{:#x}> ({9})",
+            self.get_8(Register8::A),
+            self.get_8(Register8::F),
+            self.get_8(Register8::B),
+            self.get_8(Register8::C),
+            self.get_8(Register8::D),
+            self.get_8(Register8::E),
+            self.get_8(Register8::H),
+            self.get_8(Register8::L),
+            self.get_16(Register16::SP),
+            self.get_16(Register16::PC))
+    }
 }
 
 #[test]
@@ -181,6 +210,7 @@ fn set_get() {
     assert_eq!(cpu.get_16(Register16::HL), 53_000);
     assert_eq!(cpu.get_16(Register16::SP), 54_000);
     assert_eq!(cpu.get_16(Register16::PC), 55_000);
+    println!("{:?}", cpu);
 }
 
 #[test]
