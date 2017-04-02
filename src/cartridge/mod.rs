@@ -35,7 +35,7 @@ impl Cartridge {
 
     /// Read a range of bytes from the rom
     pub fn read_range(&self, addr: (u16, u16)) -> Vec<u8> {
-        let mut a: Vec<u8> = Vec::new();
+        let mut a: Vec<u8> = Vec::with_capacity((addr.1 - addr.0) as usize);
         for x in addr.0..addr.1 {
             a.push(self.0[x as usize])
         }
@@ -57,10 +57,10 @@ impl Cartridge {
     /// Read mem type
     pub fn cartridge_type(&self) -> MBC {
         match self.read_byte(CARTRIDGE_TYPE) {
-            0x00 | 0x8 | 0x9 => MBC::ROM,
-            0x1 | 0x2 | 0x3 => MBC::MBC1,
-            0x5 | 0x6 => MBC::MBC2,
-            0xF | 0x10 | 0x11 | 0x12 | 0x13 => MBC::MBC3,
+            0x00 | 0x8  | 0x9 => MBC::ROM,
+            0x1  | 0x2  | 0x3 => MBC::MBC1,
+            0x5  | 0x6  => MBC::MBC2,
+            0xF  | 0x10 | 0x11 | 0x12 | 0x13 => MBC::MBC3,
             0x15 | 0x16 | 0x17 => MBC::MBC4,
             0x19 | 0x1B | 0x1C | 0x1D | 0x1E => MBC::MBC5,
             _ => unreachable!()
