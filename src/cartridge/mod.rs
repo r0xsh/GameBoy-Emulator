@@ -4,7 +4,12 @@ use std::path::Path;
 use std::io;
 use std::fmt;
 
-pub struct Cartridge(pub Vec<u8>);
+const TITLE: (u16, u16) = (0x0134, 0x0143);
+const CARTRIDGE_TYPE: u16 = 0x0147;
+const ROM_SIZE: u16 = 0x0148;
+const RAM_SIZE: u16 = 0x0149;
+
+pub struct Cartridge(Vec<u8>);
 
 impl Cartridge {
 
@@ -13,20 +18,19 @@ impl Cartridge {
         let mut rom: Vec<u8> = Vec::new();
         let mut file = File::open(path)?;
         let _ = file.read_to_end(&mut rom)?;
-        println!("ROM LOADED");
         Ok(Cartridge(rom))
     }
 
     /// Read a byte from the rom
-    pub fn read_byte(&self, addr: usize) -> u8 {
-        self.0[addr]
+    pub fn read_byte(&self, addr: u16) -> u8 {
+        self.0[addr as usize]
     }
 
     /// Read a range of bytes from the rom
-    pub fn read_range(&self, addr: usize, end: usize) -> Vec<u8> {
+    pub fn read_range(&self, addr: (u16, u16)) -> Vec<u8> {
         let mut a: Vec<u8> = Vec::new();
-        for x in addr..end {
-            a.push(self.0[x])
+        for x in addr.0..addr.1 {
+            a.push(self.0[x as usize])
         }
         a
     }
@@ -34,7 +38,7 @@ impl Cartridge {
     /// Read the rom's title
     pub fn read_title(&self) -> String {
         let mut title = String::with_capacity(16);
-        for letter in self.read_range(0x0134, 0x0143) {
+        for letter in self.read_range(TITLE) {
             if letter == 0 {
                 break;
             }
@@ -55,16 +59,8 @@ impl fmt::Debug for Cartridge {
             > ROM size: {:#x}\n\
             > RAM size: {:#x}",
             self.read_title(),
-            self.read_byte(0x0147),
-            self.read_byte(0x148),
-            self.read_byte(0x0149))
+            self.read_byte(CARTRIDGE_TYPE),
+            self.read_byte(ROM_SIZE),
+            self.read_byte(RAM_SIZE))
     }
 }
-
-#[test]
-fn get_name() {
-    let rom = Cartridge::new("./rom/super_mario.gb").unwrap();
-    assert_eq!(rom.read_title(), "SUPER MARIOLAND");
-}
-
-
