@@ -35,4 +35,17 @@ impl Memory {
         }
         a
     }
+
+    /// Write a byte to the memory
+    pub fn write_byte(&mut self, addr: u16, v: u8) {
+        self.0[addr as usize] = v;
+    }
+
+}
+
+#[test]
+fn read_write(){
+    let mut mem = Memory::new();
+    mem.write_byte(0xdeff, 0xb1);
+    assert_eq!(mem.read_byte(0xdeff), 0xb1);
 }
