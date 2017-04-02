@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::env;
 
-
+#[macro_use]
 mod gameboy;
 mod cpu;
 mod cartridge;
