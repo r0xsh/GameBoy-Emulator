@@ -1,5 +1,8 @@
 # Ressources
 
+- http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf
+- http://gbdev.gg8.se/wiki/articles/The_Cartridge_Header
+
 Opcode
 ---
 
