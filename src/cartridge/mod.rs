@@ -11,21 +11,23 @@ const RAM_SIZE: u16 = 0x0149;
 
 #[derive(Debug)]
 pub enum MBC {
-    ROM, MBC1,
-    MBC2, MBC3,
-    MBC4, MBC5
+    ROM,
+    MBC1,
+    MBC2,
+    MBC3,
+    MBC4,
+    MBC5,
 }
 
-pub struct Cartridge(Vec<u8>);
+pub struct Cartridge(Vec<u8>, usize);
 
 impl Cartridge {
-
     /// Load rom file
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Cartridge> {
         let mut rom: Vec<u8> = Vec::new();
         let mut file = File::open(path)?;
-        let _ = file.read_to_end(&mut rom)?;
-        Ok(Cartridge(rom))
+        let size = file.read_to_end(&mut rom)?;
+        Ok(Cartridge(rom, size))
     }
 
     /// Read a byte from the rom
@@ -57,29 +59,35 @@ impl Cartridge {
     /// Read mem type
     pub fn cartridge_type(&self) -> MBC {
         match self.read_byte(CARTRIDGE_TYPE) {
-            0x00 | 0x8  | 0x9 => MBC::ROM,
-            0x1  | 0x2  | 0x3 => MBC::MBC1,
-            0x5  | 0x6  => MBC::MBC2,
-            0xF  | 0x10 | 0x11 | 0x12 | 0x13 => MBC::MBC3,
+            0x00 | 0x8 | 0x9 => MBC::ROM,
+            0x1 | 0x2 | 0x3 => MBC::MBC1,
+            0x5 | 0x6 => MBC::MBC2,
+            0xF | 0x10 | 0x11 | 0x12 | 0x13 => MBC::MBC3,
             0x15 | 0x16 | 0x17 => MBC::MBC4,
             0x19 | 0x1B | 0x1C | 0x1D | 0x1E => MBC::MBC5,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
-
+    /// Return the size of the cartridge
+    pub fn size(&self) -> usize {
+        self.1
+    }
 }
 
 impl fmt::Debug for Cartridge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "=== ROM DEBUG ===\n\
+        write!(f,
+               "=== ROM DEBUG ===\n\
             > title game {}\n\
             > cartridge type: {:?}\n\
+            > cartridge size: {}\n\
             > ROM size: {:#x}\n\
             > RAM size: {:#x}",
-            self.read_title(),
-            self.cartridge_type(),
-            self.read_byte(ROM_SIZE),
-            self.read_byte(RAM_SIZE))
+               self.read_title(),
+               self.cartridge_type(),
+               self.size(),
+               self.read_byte(ROM_SIZE),
+               self.read_byte(RAM_SIZE))
     }
 }

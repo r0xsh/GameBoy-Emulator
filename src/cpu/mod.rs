@@ -1,25 +1,34 @@
 use std::fmt;
+pub mod opcodes;
 
 pub enum Register8 {
-    A, F,
-    B, C,
-    D, E,
-    H, L
+    A,
+    F,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
 }
 
 pub enum Register16 {
-    AF, BC,
-    DE, HL,
-    SP, PC
+    AF,
+    BC,
+    DE,
+    HL,
+    SP,
+    PC,
 }
 
 pub enum Flag {
-    Z, N,
-    H, C
+    Z,
+    N,
+    H,
+    C,
 }
 
 pub struct Cpu {
-
     /// Accumulator register
     a: u8,
     /// Flags register
@@ -31,8 +40,7 @@ pub struct Cpu {
     h: u8,
     l: u8,
     sp: u16,
-    pc: u16
-
+    pc: u16,
 }
 
 macro_rules! high_byte {
@@ -52,7 +60,6 @@ macro_rules! join_bytes {
 }
 
 impl Cpu {
-
     /// Init a new Cpu instance
     pub fn new() -> Cpu {
         Cpu {
@@ -65,7 +72,7 @@ impl Cpu {
             h: 0x0,
             l: 0x0,
             sp: 0x00,
-            pc: 0x00
+            pc: 0x00,
         }
     }
 
@@ -100,12 +107,12 @@ impl Cpu {
     /// Get a 16bit value from a register
     pub fn get_16(&self, reg: Register16) -> u16 {
         match reg {
-            Register16::AF => { join_bytes!(self.a, self.f) }
-            Register16::BC => { join_bytes!(self.b, self.c) }
-            Register16::DE => { join_bytes!(self.d, self.e) }
-            Register16::HL => { join_bytes!(self.h, self.l) }
+            Register16::AF => join_bytes!(self.a, self.f),
+            Register16::BC => join_bytes!(self.b, self.c),
+            Register16::DE => join_bytes!(self.d, self.e),
+            Register16::HL => join_bytes!(self.h, self.l),
             Register16::SP => self.sp,
-            Register16::PC => self.pc
+            Register16::PC => self.pc,
         }
     }
 
@@ -129,7 +136,7 @@ impl Cpu {
                 self.l = low_byte!(v);
             }
             Register16::SP => self.sp = v,
-            Register16::PC => self.pc = v
+            Register16::PC => self.pc = v,
         }
     }
 
@@ -137,23 +144,23 @@ impl Cpu {
     pub fn set_flag(&mut self, flag: Flag, set: bool) {
         let f = self.get_8(Register8::F);
         match (flag, set) {
-            (Flag::Z, true) => { self.set_8(Register8::F, (f | 0b10000000)) }
-            (Flag::N, true) => { self.set_8(Register8::F, (f | 0b01000000)) }
-            (Flag::H, true) => { self.set_8(Register8::F, (f | 0b00100000)) }
-            (Flag::C, true) => { self.set_8(Register8::F, (f | 0b00010000)) }
-            (Flag::Z, false) => { self.set_8(Register8::F, (f & 0b01111111)) }
-            (Flag::N, false) => { self.set_8(Register8::F, (f & 0b10111111)) }
-            (Flag::H, false) => { self.set_8(Register8::F, (f & 0b11011111)) }
-            (Flag::C, false) => { self.set_8(Register8::F, (f & 0b11101111)) }
+            (Flag::Z, true) => self.set_8(Register8::F, (f | 0b10000000)),
+            (Flag::N, true) => self.set_8(Register8::F, (f | 0b01000000)),
+            (Flag::H, true) => self.set_8(Register8::F, (f | 0b00100000)),
+            (Flag::C, true) => self.set_8(Register8::F, (f | 0b00010000)),
+            (Flag::Z, false) => self.set_8(Register8::F, (f & 0b01111111)),
+            (Flag::N, false) => self.set_8(Register8::F, (f & 0b10111111)),
+            (Flag::H, false) => self.set_8(Register8::F, (f & 0b11011111)),
+            (Flag::C, false) => self.set_8(Register8::F, (f & 0b11101111)),
         }
     }
-
 }
 
 
 impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "=== CPU DEBUG ===\n\
+        write!(f,
+               "=== CPU DEBUG ===\n\
             > A        <{:#x}> ({0})\n\
             > F (flag) <{:#x}> ({1})\n\
             > B        <{:#x}> ({2})\n\
@@ -164,16 +171,16 @@ impl fmt::Debug for Cpu {
             > L        <{:#x}> ({7})\n\
             > SP       <{:#x}> ({8})\n\
             > PC       <{:#x}> ({9})",
-            self.get_8(Register8::A),
-            self.get_8(Register8::F),
-            self.get_8(Register8::B),
-            self.get_8(Register8::C),
-            self.get_8(Register8::D),
-            self.get_8(Register8::E),
-            self.get_8(Register8::H),
-            self.get_8(Register8::L),
-            self.get_16(Register16::SP),
-            self.get_16(Register16::PC))
+               self.get_8(Register8::A),
+               self.get_8(Register8::F),
+               self.get_8(Register8::B),
+               self.get_8(Register8::C),
+               self.get_8(Register8::D),
+               self.get_8(Register8::E),
+               self.get_8(Register8::H),
+               self.get_8(Register8::L),
+               self.get_16(Register16::SP),
+               self.get_16(Register16::PC))
     }
 }
 
@@ -210,7 +217,6 @@ fn set_get() {
     assert_eq!(cpu.get_16(Register16::HL), 53_000);
     assert_eq!(cpu.get_16(Register16::SP), 54_000);
     assert_eq!(cpu.get_16(Register16::PC), 55_000);
-    println!("{:?}", cpu);
 }
 
 #[test]

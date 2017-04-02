@@ -13,7 +13,6 @@ const MEMORY_SIZE: u16 = 0xffff;
 pub struct Memory(Vec<u8>);
 
 impl Memory {
-
     /// Init a new memory unit
     pub fn new() -> Memory {
         let mut mem: Vec<u8> = Vec::with_capacity(MEMORY_SIZE as usize);
@@ -36,5 +35,4 @@ impl Memory {
         }
         a
     }
-
 }
