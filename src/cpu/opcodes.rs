@@ -12,7 +12,7 @@ pub fn decode(gb: &mut GameBoy) {
 /// Map Opcode to function
 fn opcode_router(opcode: u8, gb: &mut GameBoy) {
     match opcode {
-        0x00 => {},
+        0x00 => { nop(gb) },
         0x01 => { ld_bc_nn(gb) },
         0x02 => { ld_bcp_a(gb) },
         0x03 => { inc_bc(gb) },
@@ -272,7 +272,6 @@ fn opcode_router(opcode: u8, gb: &mut GameBoy) {
     }
 }
 
-
 /// XOR generic function
 fn xor(gb: &mut GameBoy, reg: Register8) {
     let mut acc = gb.cpu.get_8(Register8::A);
@@ -312,12 +311,17 @@ fn and(gb: &mut GameBoy, reg: Register8) {
     gb.cpu.inc_pc(1);
 }
 
+/// NOP 0x00
+fn nop(gb: &mut GameBoy) {
+    gb.cpu.inc_pc(1);
+}
+
+
 /// LD BC, nn 0x01
 fn ld_bc_nn(gb: &mut GameBoy) {
     let v: u16 = gb.cartridge.read_word(gb.cpu.get_16(Register16::PC) + 1);
     gb.cpu.set_16(Register16::BC, v);
     gb.cpu.inc_pc(3);
-
 }
 
 /// LD (BC), a 0x02
