@@ -8,7 +8,7 @@
  *
  */
 
-const MEMORY_SIZE: usize = 65536;
+const MEMORY_SIZE: usize = 65536; // 64 * 1024 (64KB)
 
 pub struct Memory(Vec<u8>);
 

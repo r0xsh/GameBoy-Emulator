@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/r0xsh/GameBoy-Emulator.svg?branch=master)](https://travis-ci.org/r0xsh/GameBoy-Emulator)
 ![ゲームボーイ](http://i.imgur.com/gxJJMZ0.png)
 
 # Ressources

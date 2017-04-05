@@ -1,12 +1,15 @@
 #![allow(dead_code)]
-use std::env;
 
 #[macro_use]
 mod utils;
+mod debugger;
 mod gameboy;
 mod cpu;
 mod cartridge;
 mod memory;
+
+use std::env;
+
 
 use gameboy::GameBoy;
 use cartridge::Cartridge;
@@ -14,6 +17,7 @@ use cpu::Cpu;
 use memory::Memory;
 
 fn main() {
+
     // Load a ROM file and return a Cartridge
     let rom = Cartridge::new(env::args().nth(1).unwrap()).unwrap();
 
@@ -26,5 +30,9 @@ fn main() {
     // Plug all emulated componants into the GameBoy
     let mut gb: GameBoy = GameBoy::new(&mut cpu, &rom, &mut mem);
 
-    cpu::opcodes::decode(&mut gb);
+    'debugger: loop {
+        let _ = debugger::prompt();
+        cpu::opcodes::decode(&mut gb);
+        println!("{:?}", gb.cpu);
+    }
 }
