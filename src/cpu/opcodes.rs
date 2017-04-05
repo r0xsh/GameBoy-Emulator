@@ -272,13 +272,41 @@ fn opcode_router(opcode: u8, gb: &mut GameBoy) {
     }
 }
 
+
+/// XOR generic function
 fn xor(gb: &mut GameBoy, reg: Register8) {
     let mut acc = gb.cpu.get_8(Register8::A);
     acc ^= gb.cpu.get_8(reg);
     gb.cpu.set_8(Register8::A, acc);
     gb.cpu.reset_flags();
     match acc {
-       0 => gb.cpu.set_flag(Flag::Z, true),
+        0 => gb.cpu.set_flag(Flag::Z, true),
+        _ => gb.cpu.set_flag(Flag::Z, false),
+    }
+    gb.cpu.inc_pc(1);
+}
+
+/// OR generic function
+fn or(gb: &mut GameBoy, reg: Register8) {
+    let mut acc = gb.cpu.get_8(Register8::A);
+    acc |= gb.cpu.get_8(reg);
+    gb.cpu.set_8(Register8::A, acc);
+    gb.cpu.reset_flags();
+    match acc {
+        0 => gb.cpu.set_flag(Flag::Z, true),
+        _ => gb.cpu.set_flag(Flag::Z, false),
+    }
+    gb.cpu.inc_pc(1);
+}
+
+/// AND generic function
+fn and(gb: &mut GameBoy, reg: Register8) {
+    let mut acc = gb.cpu.get_8(Register8::A);
+    acc &= gb.cpu.get_8(reg);
+    gb.cpu.set_8(Register8::A, acc);
+    gb.cpu.reset_flags();
+    match acc {
+        0 => gb.cpu.set_flag(Flag::Z, true),
         _ => gb.cpu.set_flag(Flag::Z, false),
     }
     gb.cpu.inc_pc(1);
