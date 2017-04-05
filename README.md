@@ -15,3 +15,4 @@
 #### Boot ROM Assembly
 
 - https://www.onlinedisassembler.com/odaweb/FKhw2Aoo/0
+- http://gbdev.gg8.se/wiki/articles/Gameboy_Bootstrap_ROM
