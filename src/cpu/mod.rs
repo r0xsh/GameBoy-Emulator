@@ -42,6 +42,7 @@ pub struct Cpu {
     l: u8,
     sp: u16,
     pc: u16,
+    timer: u8,
 }
 
 
@@ -60,6 +61,7 @@ impl Cpu {
             l: 0x0,
             sp: 0x00,
             pc: 0x00,
+            timer: 0x0,
         }
     }
 
@@ -140,6 +142,14 @@ impl Cpu {
             (Flag::H, false) => self.set_8(Register8::F, (f & 0b11011111)),
             (Flag::C, false) => self.set_8(Register8::F, (f & 0b11101111)),
         }
+    }
+
+    /// Set all the flags return to false
+    pub fn reset_flags(&mut self) {
+        self.set_flag(Flag::Z, false);
+        self.set_flag(Flag::N, false);
+        self.set_flag(Flag::H, false);
+        self.set_flag(Flag::C, false);
     }
 
     /// Inc 8bit register by 1
