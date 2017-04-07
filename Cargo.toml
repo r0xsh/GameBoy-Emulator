@@ -3,14 +3,7 @@ name = "gameboy"
 version = "0.1.0"
 authors = ["Antoine BAGNAUD <bagnaud.antoine@gmail.com>"]
 
-[features]
-default = []
-debug = ["websocket"]
-
-[dependencies]
-
 
 [dependencies.websocket]
 version = "0.19.0"
 default-features = false
-optional = true

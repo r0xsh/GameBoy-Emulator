@@ -1,15 +1,18 @@
 #![allow(dead_code)]
 
+extern crate websocket;
+
+mod debugger;
+
+
 #[macro_use]
 mod utils;
-mod debugger;
 mod gameboy;
 mod cpu;
 mod cartridge;
 mod memory;
 
 use std::env;
-
 
 use gameboy::GameBoy;
 use cartridge::Cartridge;
@@ -28,11 +31,12 @@ fn main() {
     let mut mem = Memory::new();
 
     // Plug all emulated componants into the GameBoy
-    let mut gb: GameBoy = GameBoy::new(&mut cpu, &rom, &mut mem);
+    let mut gb = GameBoy::new(&mut cpu, &rom, &mut mem);
 
-    'debugger: loop {
-        let _ = debugger::prompt();
+    loop {
         cpu::opcodes::decode(&mut gb);
-        println!("{:?}", gb.cpu);
     }
+
+
+
 }

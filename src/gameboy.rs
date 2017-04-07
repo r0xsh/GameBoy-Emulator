@@ -16,4 +16,5 @@ impl<'a> GameBoy<'a> {
             mem: mem,
         }
     }
+
 }

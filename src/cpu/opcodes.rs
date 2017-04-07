@@ -1,8 +1,10 @@
 use cpu::{Flag, Register8, Register16};
 use GameBoy;
+use debugger::Debugger;
 
 /// Iterate the ROM
 pub fn decode(gb: &mut GameBoy) {
+        Debugger::new(gb);
         opcode_router(gb.cartridge
                       .read_byte(gb.cpu.get_16(Register16::PC)),
                       gb);
