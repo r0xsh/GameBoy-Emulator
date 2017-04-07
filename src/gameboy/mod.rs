@@ -1,13 +1,17 @@
 pub mod debugger;
-use Cpu;
+
+use self::debugger::Debugger;
 use Cartridge;
+use Cpu;
 use Memory;
 
 pub struct GameBoy<'a> {
     pub cpu: &'a mut Cpu,
     pub cartridge: &'a Cartridge,
     pub mem: &'a mut Memory,
+    pub debugger: Option<Debugger>,
 }
+
 
 impl<'a> GameBoy<'a> {
     pub fn new(cpu: &'a mut Cpu, cartridge: &'a Cartridge, mem: &'a mut Memory) -> GameBoy<'a> {
@@ -15,11 +19,11 @@ impl<'a> GameBoy<'a> {
             cpu: cpu,
             cartridge: cartridge,
             mem: mem,
+            debugger: None,
         }
     }
 
-    pub fn debug(&self) {
-        debugger::run();
+    pub fn enable_debug(&mut self) {
+        self.debugger = Debugger::new();
     }
-
 }

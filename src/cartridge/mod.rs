@@ -1,8 +1,9 @@
+
+use std::fmt;
 use std::fs::File;
+use std::io;
 use std::io::Read;
 use std::path::Path;
-use std::io;
-use std::fmt;
 
 const TITLE: (u16, u16) = (0x0134, 0x0143);
 const CARTRIDGE_TYPE: u16 = 0x0147;
