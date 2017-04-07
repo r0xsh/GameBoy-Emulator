@@ -26,4 +26,19 @@ impl<'a> GameBoy<'a> {
     pub fn enable_debug(&mut self) {
         self.debugger = Debugger::new();
     }
+
+    pub fn event(&mut self) -> bool {
+        match self.debugger {
+            Some(ref mut d) => {
+                match d.step {
+                    0 => false,
+                    _ => {
+                        d.step -= 1;
+                        true
+                    }
+                }
+            }
+            _ => true,
+        }
+    }
 }
