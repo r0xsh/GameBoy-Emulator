@@ -1,3 +1,4 @@
+pub mod debugger;
 use Cpu;
 use Cartridge;
 use Memory;
@@ -15,6 +16,10 @@ impl<'a> GameBoy<'a> {
             cartridge: cartridge,
             mem: mem,
         }
+    }
+
+    pub fn debug(&self) {
+        debugger::run();
     }
 
 }

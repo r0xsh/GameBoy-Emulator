@@ -2,9 +2,6 @@
 
 extern crate websocket;
 
-mod debugger;
-
-
 #[macro_use]
 mod utils;
 mod gameboy;
@@ -32,6 +29,7 @@ fn main() {
 
     // Plug all emulated componants into the GameBoy
     let mut gb = GameBoy::new(&mut cpu, &rom, &mut mem);
+    gb.debug();
 
     loop {
         cpu::opcodes::decode(&mut gb);
