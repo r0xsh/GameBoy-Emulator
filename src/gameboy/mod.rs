@@ -1,5 +1,5 @@
 pub mod debugger;
-
+mod bus;
 use self::debugger::Debugger;
 use Cartridge;
 use Cpu;
