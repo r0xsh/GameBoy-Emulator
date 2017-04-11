@@ -1,5 +1,5 @@
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
 pub struct Channel<T> {
     send: Sender<T>,
@@ -21,7 +21,11 @@ impl<T: Send> Channel<T> {
          })
     }
 
-    pub fn recv(&self) -> T {
+    pub fn recv(&self) -> Result<T, TryRecvError> {
+        self.recv.try_recv()
+    }
+
+    pub fn sync_recv(&self) -> T {
         self.recv.recv().unwrap()
     }
 
@@ -31,18 +35,18 @@ impl<T: Send> Channel<T> {
 }
 
 pub struct Bus<T> {
-    pub chan1: Channel<T>,
-    pub chan2: Channel<T>,
+    pub left: Channel<T>,
+    pub right: Channel<T>,
 }
 
 impl<T: Send> Bus<T> {
     pub fn new() -> Bus<T> {
 
-        let (chan1, chan2) = Channel::new();
+        let (left, right) = Channel::new();
 
         Bus {
-            chan1: chan1,
-            chan2: chan2,
+            left: left,
+            right: right,
         }
     }
 }
