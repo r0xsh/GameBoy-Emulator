@@ -1,6 +1,7 @@
-use ws;
-use ws::{CloseCode, Handler, Message , Sender, listen};
+
 use std::thread;
+use ws;
+use ws::{CloseCode, Handler, Message, Sender, listen};
 
 #[derive(Debug, PartialEq)]
 enum Action {
@@ -8,7 +9,7 @@ enum Action {
     Step(u64),
     AddBreakPtn(u64),
     DelBreakPtn(u64),
-    Err
+    Err,
 }
 
 pub struct Debugger {
@@ -46,12 +47,31 @@ impl Handler for Websocket {
 fn handle(s: &str) -> Result<Action, ()> {
     let mut split = s.split(",");
 
-    match split.next().unwrap() {
+    let cmd: &str = match split.next() {
+        Some(e) => e,
+        None => return Err(()),
+    };
+
+    let opt: u64 = match (split.next(), cmd) {
+        (None, "Next") => 0,
+        (Some(e), _) => {
+            match e.parse::<u64>() {
+                Ok(u) => match u {
+                    0 => return Err(()),
+                    _ => u
+                },
+                Err(_) => return Err(()),
+            }
+        }
+        (None, _) => return Err(()),
+    };
+
+    match cmd {
         "Next" => Ok(Action::Next),
-        "Step" => Ok(Action::Step(split.next().unwrap().parse::<u64>().unwrap())),
-        "AddBreakPtn" => Ok(Action::AddBreakPtn(split.next().unwrap().parse::<u64>().unwrap())),
-        "DelBreakPtn" => Ok(Action::DelBreakPtn(split.next().unwrap().parse::<u64>().unwrap())),
-        _ => Err(())
+        "Step" => Ok(Action::Step(opt)),
+        "AddBreakPtn" => Ok(Action::AddBreakPtn(opt)),
+        "DelBreakPtn" => Ok(Action::DelBreakPtn(opt)),
+        _ => Err(()),
     }
 }
 
