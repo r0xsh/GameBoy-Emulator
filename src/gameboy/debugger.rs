@@ -48,14 +48,14 @@ fn handle(s: &str) -> Result<Action, ()> {
     let mut split = s.split(",");
 
     let cmd: &str = match split.next() {
-        Some(e) => e,
+        Some(e) => e.trim(),
         None => return Err(()),
     };
 
     let opt: u64 = match (split.next(), cmd) {
         (None, "Next") => 0,
         (Some(e), _) => {
-            match e.parse::<u64>() {
+            match e.trim().parse::<u64>() {
                 Ok(u) => match u {
                     0 => return Err(()),
                     _ => u
@@ -81,6 +81,8 @@ fn handle_cmd() {
     assert_eq!(handle("Step,45"), Ok(Action::Step(45)));
     assert_eq!(handle("AddBreakPtn,678"), Ok(Action::AddBreakPtn(678)));
     assert_eq!(handle("DelBreakPtn,654"), Ok(Action::DelBreakPtn(654)));
+    assert_eq!(handle("DelBreakPtn  , 67  "), Ok(Action::DelBreakPtn(67)));
+    assert_eq!(handle("DelBreakPtn, coucou"), Err(()));
 
     assert_eq!(handle("Foo"), Err(()));
     assert_eq!(handle("Step,-45"), Err(()));
