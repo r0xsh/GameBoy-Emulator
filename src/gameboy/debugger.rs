@@ -2,7 +2,7 @@ use ws;
 use ws::{CloseCode, Handler, Message , Sender, listen};
 use std::thread;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Action {
     Next,
     Step(u64),
@@ -32,7 +32,7 @@ impl Debugger {
 
 impl Handler for Websocket {
     fn on_message(&mut self, msg: Message) -> ws::Result<()> {
-        println!("{:?}", handle(&msg));
+        println!("{:?}", handle(msg.as_text().unwrap()));
         Ok(())
     }
 
@@ -43,9 +43,8 @@ impl Handler for Websocket {
 
 
 //TODO: Better error handling
-fn handle(s: &Message) -> Result<Action, ()> {
-    let msg = s.as_text().unwrap();
-    let mut split = msg.split(",");
+fn handle(s: &str) -> Result<Action, ()> {
+    let mut split = s.split(",");
 
     match split.next().unwrap() {
         "Next" => Ok(Action::Next),
@@ -54,4 +53,18 @@ fn handle(s: &Message) -> Result<Action, ()> {
         "DelBreakPtn" => Ok(Action::DelBreakPtn(split.next().unwrap().parse::<u64>().unwrap())),
         _ => Err(())
     }
+}
+
+#[test]
+fn handle_cmd() {
+    assert_eq!(handle("Next"), Ok(Action::Next));
+    assert_eq!(handle("Step,45"), Ok(Action::Step(45)));
+    assert_eq!(handle("AddBreakPtn,678"), Ok(Action::AddBreakPtn(678)));
+    assert_eq!(handle("DelBreakPtn,654"), Ok(Action::DelBreakPtn(654)));
+
+    assert_eq!(handle("Foo"), Err(()));
+    assert_eq!(handle("Step,-45"), Err(()));
+    assert_eq!(handle("AddBreakPtn"), Err(()));
+    assert_eq!(handle("DelBreakPtn,0"), Err(()));
+
 }
