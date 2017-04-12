@@ -1,19 +1,14 @@
-use serde_json;
-use ws::{CloseCode, Handler, Message, Result, Sender, listen};
+use ws;
+use ws::{CloseCode, Handler, Message , Sender, listen};
 use std::thread;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 enum Action {
     Next,
     Step(u64),
     AddBreakPtn(u64),
-    DelBreakPtn(u64)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Handle {
-    action: Action,
-    opt: u64
+    DelBreakPtn(u64),
+    Err
 }
 
 pub struct Debugger {
@@ -24,7 +19,9 @@ struct Websocket(Sender);
 
 impl Debugger {
     pub fn new() -> Debugger {
-        Debugger { step: 0 }
+        let debugger = Debugger { step: 0 };
+        debugger.listen();
+        debugger
     }
 
     fn listen(&self) {
@@ -34,8 +31,8 @@ impl Debugger {
 
 
 impl Handler for Websocket {
-    fn on_message(&mut self, msg: Message) -> Result<()> {
-        println!("Command received: {:?}", handle(&msg));
+    fn on_message(&mut self, msg: Message) -> ws::Result<()> {
+        println!("{:?}", handle(&msg));
         Ok(())
     }
 
@@ -44,6 +41,17 @@ impl Handler for Websocket {
     }
 }
 
-fn handle(s: &Message) -> Handle {
-    serde_json::from_str(s.as_text().unwrap()).unwrap()
+
+//TODO: Better error handling
+fn handle(s: &Message) -> Result<Action, ()> {
+    let msg = s.as_text().unwrap();
+    let mut split = msg.split(",");
+
+    match split.next().unwrap() {
+        "Next" => Ok(Action::Next),
+        "Step" => Ok(Action::Step(split.next().unwrap().parse::<u64>().unwrap())),
+        "AddBreakPtn" => Ok(Action::AddBreakPtn(split.next().unwrap().parse::<u64>().unwrap())),
+        "DelBreakPtn" => Ok(Action::DelBreakPtn(split.next().unwrap().parse::<u64>().unwrap())),
+        _ => Err(())
+    }
 }
