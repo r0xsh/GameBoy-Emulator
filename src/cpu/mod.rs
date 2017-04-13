@@ -49,8 +49,8 @@ pub struct Cpu {
 
 impl Cpu {
     /// Init a new Cpu instance
-    pub fn new() -> Cpu {
-        Cpu {
+    pub fn new() -> Box<Cpu> {
+        Box::new(Cpu {
             a: 0x0,
             f: 0x0,
             b: 0x0,
@@ -62,7 +62,7 @@ impl Cpu {
             sp: 0x00,
             pc: 0x00,
             timer: 0x0,
-        }
+        })
     }
 
     /// Get a 8bit value from register

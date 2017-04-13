@@ -14,12 +14,12 @@ pub struct Memory(Vec<u8>);
 
 impl Memory {
     /// Init a new memory unit
-    pub fn new() -> Memory {
+    pub fn new() -> Box<Memory> {
         let mut mem: Vec<u8> = Vec::with_capacity(MEMORY_SIZE);
         for _ in 0..MEMORY_SIZE {
             mem.push(0);
         }
-        Memory(mem)
+        Box::new(Memory(mem))
     }
 
     /// Read a byte from the memory

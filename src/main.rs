@@ -22,19 +22,18 @@ fn main() {
     let rom = Cartridge::new(env::args().nth(1).unwrap()).unwrap();
 
     // Init Cpu registers
-    let mut cpu = Cpu::new();
+    let cpu = Cpu::new();
 
     // Init memory
-    let mut mem = Memory::new();
+    let mem = Memory::new();
 
     // Plug all emulated componants into the GameBoy
-    let mut gb = GameBoy::new(&mut cpu, &rom, &mut mem);
-    gb.enable_debug();
+    let mut gb = GameBoy::new(cpu, rom, mem);
 
-    loop {
+    gameboy::debugger::Debugger::new(&mut gb);
+
+    for _ in 0..160 {
         cpu::opcodes::decode(&mut gb);
     }
-
-
 
 }

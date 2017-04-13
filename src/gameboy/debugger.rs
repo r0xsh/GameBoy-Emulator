@@ -1,7 +1,7 @@
-
 use std::thread;
 use ws;
 use ws::{CloseCode, Handler, Message, Sender, listen};
+use GameBoy;
 
 #[derive(Debug, PartialEq)]
 enum Action {
@@ -9,18 +9,18 @@ enum Action {
     Step(u64),
     AddBreakPtn(u64),
     DelBreakPtn(u64),
-    Err,
 }
 
-pub struct Debugger {
+pub struct Debugger<'d> {
     pub step: u64,
+    gb: &'d Box<GameBoy>
 }
 
 struct Websocket(Sender);
 
-impl Debugger {
-    pub fn new() -> Debugger {
-        let debugger = Debugger { step: 0 };
+impl<'d> Debugger<'d> {
+    pub fn new(gb: &Box<GameBoy>) -> Debugger {
+        let debugger = Debugger { step: 0, gb: gb };
         debugger.listen();
         debugger
     }
@@ -43,7 +43,7 @@ impl Handler for Websocket {
 }
 
 
-//TODO: Better error handling
+/// Parse incomming message to Action enum
 fn handle(s: &str) -> Result<Action, ()> {
     let mut split = s.split(",");
 
@@ -88,5 +88,4 @@ fn handle_cmd() {
     assert_eq!(handle("Step,-45"), Err(()));
     assert_eq!(handle("AddBreakPtn"), Err(()));
     assert_eq!(handle("DelBreakPtn,0"), Err(()));
-
 }
