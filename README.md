@@ -2,6 +2,8 @@
 
 ![ゲームボーイ](http://i.imgur.com/gxJJMZ0.png)
 
+# The project is currently paused, I wait for the webassembly to evolve and continue this project with this technlogy
+
 # Ressources
 
 - http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf
