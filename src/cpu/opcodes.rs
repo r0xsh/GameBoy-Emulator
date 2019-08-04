@@ -6,6 +6,7 @@ use cpu::op_decode;
 /// Iterate the ROM
 pub fn decode(gb: &mut GameBoy) {
     let opcode = gb.mem.read_byte(gb.cpu.get_16(Register16::PC));
+    gb.cpu.inc_pc(1);
 
     let parsed_op = (cpu::op_decode::get_x(op),
     cpu::op_decode::get_y(op),
@@ -20,20 +21,38 @@ pub fn decode(gb: &mut GameBoy) {
             op_nop()
         }, // NOOP
         (0, 1, 0, _, _) => {
-            op_ld_mem16(gb, gb.mem.read_word(gb.cpu.get_16(Register16::PC) + 1), gb.cpu.get_16(Register16::SP))
+            op_ld_mem16(gb, gb.mem.read_word(gb.cpu.get_16(Register16::PC)), gb.cpu.get_16(Register16::SP))
         }, // LD (nn), SP
         (0, 2, 0, _, _) => {
             op_nop()
         }, // STOP
         (0, 3, 0, _, _) => {
-            op_nop()
+            let pc_val = gb.cpu.get_16(Register16::PC);
+            gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val));
         }, // JR d
         (0, 4..7, 0, _, _) => {
-            op_nop()
+            if (gb.cpu.get_cc_table(parsed_op.1 - 4)) {
+                let pc_val = gb.cpu.get_16(Register16::PC);
+                gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val));
+            }
         }, // JR cc[y-4], d
         // Z = 1
         (0, _, 1, _, 0) => {
-            op_nop()
+            let reg: Option<Register16> = None;
+            match parsed_op.3 {
+                0 => reg = Some(Register16::BC);
+                1 => reg = Some(Register16::DE);
+                2 => reg = Some(Register16::HL);
+                3 => reg = Some(Register16::SP);
+                _ => {}
+            }
+            match reg {
+                Some(ref r) => {
+                    let operand = gb.mem.read_word(gb.cpu.get_16(Register16::PC));
+                    op_ld_reg16(r, operand);
+                }
+                None => {}
+            }
         }, // LD rp[p], nn
         (0, _, 1, _, 1) => {
             op_nop()

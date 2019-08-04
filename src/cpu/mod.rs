@@ -161,6 +161,16 @@ impl Cpu {
         }
     }
 
+    pub fn get_cc_table(&self, y: u8) -> bool {
+        match y {
+            0 => self.get_flag(Flag::NZ),
+            1 => self.get_flag(Flag::Z),
+            2 => self.get_flag(Flag::NC),
+            3 => self.get_flag(Flag::C),
+            _ => false,
+        } 
+    }
+
 
     /// Set all the flags return to false
     pub fn reset_flags(&mut self) {
