@@ -27,18 +27,29 @@ impl Memory {
         self.0[addr as usize]
     }
 
-    /// Read a range of bytes from the memory
+    pub fn read_word(&self, addr: u16) -> u16 {
+        let a = self.read_byte(addr);
+        let b = self.read_byte(addr + 1);
+        join_bytes!(b, a)
+    }
+
+    /*/// Read a range of bytes from the memory
     pub fn read_range(&self, addr: (u16, u16)) -> Vec<u8> {
         let mut a: Vec<u8> = Vec::with_capacity((addr.1 - addr.0) as usize);
         for x in addr.0..addr.1 {
             a.push(self.0[x as usize])
         }
         a
-    }
+    }*/
 
     /// Write a byte to the memory
     pub fn write_byte(&mut self, addr: u16, v: u8) {
         self.0[addr as usize] = v;
+    }
+
+    pub fn write_word(&mut self, addr: u16, v: u16) {
+        self.write_byte(addr, high_byte!(v));
+        self.write_byte(addr, low_byte!(v));
     }
 }
 

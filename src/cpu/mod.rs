@@ -1,6 +1,8 @@
 use std::fmt;
 pub mod opcodes;
+pub mod op_decode;
 
+#[derive(Clone, Copy)]
 pub enum Register8 {
     A,
     F,
@@ -24,9 +26,11 @@ pub enum Register16 {
 
 pub enum Flag {
     Z,
+    NZ,
     N,
     H,
     C,
+    NC,
 }
 
 pub struct Cpu {
@@ -133,16 +137,40 @@ impl Cpu {
     pub fn set_flag(&mut self, flag: Flag, set: bool) {
         let f = self.get_8(Register8::F);
         match (flag, set) {
-            (Flag::Z, true) => self.set_8(Register8::F, (f | 0b10000000)),
-            (Flag::N, true) => self.set_8(Register8::F, (f | 0b01000000)),
-            (Flag::H, true) => self.set_8(Register8::F, (f | 0b00100000)),
-            (Flag::C, true) => self.set_8(Register8::F, (f | 0b00010000)),
-            (Flag::Z, false) => self.set_8(Register8::F, (f & 0b01111111)),
-            (Flag::N, false) => self.set_8(Register8::F, (f & 0b10111111)),
-            (Flag::H, false) => self.set_8(Register8::F, (f & 0b11011111)),
-            (Flag::C, false) => self.set_8(Register8::F, (f & 0b11101111)),
+            (Flag::Z, true) => self.set_8(Register8::F, (f | 0b1000_0000)),
+            (Flag::N, true) => self.set_8(Register8::F, (f | 0b0100_0000)),
+            (Flag::H, true) => self.set_8(Register8::F, (f | 0b0010_0000)),
+            (Flag::C, true) => self.set_8(Register8::F, (f | 0b0001_0000)),
+            (Flag::Z, false) => self.set_8(Register8::F, (f & 0b0111_1111)),
+            (Flag::N, false) => self.set_8(Register8::F, (f & 0b1011_1111)),
+            (Flag::H, false) => self.set_8(Register8::F, (f & 0b1101_1111)),
+            (Flag::C, false) => self.set_8(Register8::F, (f & 0b1110_1111)),
+            _ => 0,
         }
     }
+
+    pub fn get_flag(&self, flag: Flag) -> bool {
+        let f = self.get_8(Register8::F);
+        match flag {
+            Flag::C => ((f & 0b0001_0000) as u8 >> 4 ) == 1,
+            Flag::H => ((f & 0b0010_0000) as u8 >> 5 ) == 1,
+            Flag::N => ((f & 0b0100_0000) as u8 >> 6 ) == 1,
+            Flag::Z => ((f & 0b1000_0000) as u8 >> 7 ) == 1,
+            Flag::NC => ((f & 0b0001_0000) as u8 >> 4 ) == 0,
+            Flag::NZ => ((f & 0b1000_0000) as u8 >> 7 ) == 0,
+        }
+    }
+
+    pub fn get_cc_table(&self, y: u8) -> bool {
+        match y {
+            0 => self.get_flag(Flag::NZ),
+            1 => self.get_flag(Flag::Z),
+            2 => self.get_flag(Flag::NC),
+            3 => self.get_flag(Flag::C),
+            _ => false,
+        } 
+    }
+
 
     /// Set all the flags return to false
     pub fn reset_flags(&mut self) {
