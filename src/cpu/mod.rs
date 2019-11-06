@@ -1,6 +1,7 @@
 use std::fmt;
 pub mod opcodes;
 pub mod op_decode;
+pub mod opcode;
 
 #[derive(Clone, Copy)]
 pub enum Register8 {
@@ -137,15 +138,15 @@ impl Cpu {
     pub fn set_flag(&mut self, flag: Flag, set: bool) {
         let f = self.get_8(Register8::F);
         match (flag, set) {
-            (Flag::Z, true) => self.set_8(Register8::F, (f | 0b1000_0000)),
-            (Flag::N, true) => self.set_8(Register8::F, (f | 0b0100_0000)),
-            (Flag::H, true) => self.set_8(Register8::F, (f | 0b0010_0000)),
-            (Flag::C, true) => self.set_8(Register8::F, (f | 0b0001_0000)),
-            (Flag::Z, false) => self.set_8(Register8::F, (f & 0b0111_1111)),
-            (Flag::N, false) => self.set_8(Register8::F, (f & 0b1011_1111)),
-            (Flag::H, false) => self.set_8(Register8::F, (f & 0b1101_1111)),
-            (Flag::C, false) => self.set_8(Register8::F, (f & 0b1110_1111)),
-            _ => 0,
+            (Flag::Z, true) => self.set_8(Register8::F, f | 0b1000_0000),
+            (Flag::N, true) => self.set_8(Register8::F, f | 0b0100_0000),
+            (Flag::H, true) => self.set_8(Register8::F, f | 0b0010_0000),
+            (Flag::C, true) => self.set_8(Register8::F, f | 0b0001_0000),
+            (Flag::Z, false) => self.set_8(Register8::F, f & 0b0111_1111),
+            (Flag::N, false) => self.set_8(Register8::F, f & 0b1011_1111),
+            (Flag::H, false) => self.set_8(Register8::F, f & 0b1101_1111),
+            (Flag::C, false) => self.set_8(Register8::F, f & 0b1110_1111),
+            _ => unreachable!(),
         }
     }
 
@@ -168,7 +169,7 @@ impl Cpu {
             2 => self.get_flag(Flag::NC),
             3 => self.get_flag(Flag::C),
             _ => false,
-        } 
+        }
     }
 
 

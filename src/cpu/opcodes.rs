@@ -1,19 +1,30 @@
 use ::{GameBoy, cpu};
 use cpu::{Flag, Register16, Register8};
-use cpu::op_decode;
-
+use cpu::opcode::Opcode;
 
 /// Iterate the ROM
 pub fn decode(gb: &mut GameBoy) {
-    let opcode = gb.mem.read_byte(gb.cpu.get_16(Register16::PC));
-    gb.cpu.inc_pc(1);
+    let mut op = Opcode::from(gb.cartridge.read_byte(gb.cpu.get_16(Register16::PC)));
+    op.fetch_param(&gb);
 
-    let parsed_op = (cpu::op_decode::get_x(op),
-    cpu::op_decode::get_y(op),
-    cpu::op_decode::get_z(op),
-    cpu::op_decode::get_p(op),
-    cpu::op_decode::get_q(op));
+    println!("op = {:?}, pc = {}", op, gb.cpu.get_16(Register16::PC));
 
+
+    gb.cpu.inc_pc(op.length);
+
+    return;
+    // Call a function who get the current opcode and a mutable gameboy instance
+    // should incr the PC and returns arguments
+
+    let parsed_op = (
+        cpu::op_decode::get_x(op.opcode),
+        cpu::op_decode::get_y(op.opcode),
+        cpu::op_decode::get_z(op.opcode),
+        cpu::op_decode::get_p(op.opcode),
+        cpu::op_decode::get_q(op.opcode)
+    );
+
+    // X, Y, Z, P, Q
     match parsed_op {
         // X = 0
         // Z = 0
@@ -21,6 +32,7 @@ pub fn decode(gb: &mut GameBoy) {
             op_nop()
         }, // NOOP
         (0, 1, 0, _, _) => {
+            // Register16::PC should be an argument instead
             op_ld_mem16(gb, gb.mem.read_word(gb.cpu.get_16(Register16::PC)), gb.cpu.get_16(Register16::SP))
         }, // LD (nn), SP
         (0, 2, 0, _, _) => {
@@ -28,28 +40,28 @@ pub fn decode(gb: &mut GameBoy) {
         }, // STOP
         (0, 3, 0, _, _) => {
             let pc_val = gb.cpu.get_16(Register16::PC);
-            gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val));
+            gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val) as u16);
         }, // JR d
-        (0, 4..7, 0, _, _) => {
-            if (gb.cpu.get_cc_table(parsed_op.1 - 4)) {
+        (0, 4..=7, 0, _, _) => {
+            if gb.cpu.get_cc_table(parsed_op.1 - 4) {
                 let pc_val = gb.cpu.get_16(Register16::PC);
-                gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val));
+                gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val) as u16);
             }
         }, // JR cc[y-4], d
         // Z = 1
         (0, _, 1, _, 0) => {
-            let reg: Option<Register16> = None;
+            let mut reg: Option<Register16> = None;
             match parsed_op.3 {
-                0 => reg = Some(Register16::BC);
-                1 => reg = Some(Register16::DE);
-                2 => reg = Some(Register16::HL);
-                3 => reg = Some(Register16::SP);
+                0 => reg = Some(Register16::BC),
+                1 => reg = Some(Register16::DE),
+                2 => reg = Some(Register16::HL),
+                3 => reg = Some(Register16::SP),
                 _ => {}
-            }
+            };
             match reg {
                 Some(ref r) => {
                     let operand = gb.mem.read_word(gb.cpu.get_16(Register16::PC));
-                    op_ld_reg16(r, operand);
+                    op_ld_reg16(gb, *r, operand);
                 }
                 None => {}
             }
@@ -118,7 +130,7 @@ pub fn decode(gb: &mut GameBoy) {
             call_alu_table_r(gb, parsed_op.2, parsed_op.1)
         }, // alu[y] r[z]
         // X = 3
-        (3, 0..3, 0, _, _) => {
+        (3, 0..=3, 0, _, _) => {
             op_nop()
         }, // RET cc[y]
         (3, 4, 0, _, _) => {
@@ -150,7 +162,7 @@ pub fn decode(gb: &mut GameBoy) {
             op_nop()
         }, // LD SP, HL
 
-        (3, 0..3, 2, _, _) => {
+        (3, 0..=3, 2, _, _) => {
             op_nop()
         }, // JP cc[y], nn
         (3, 4, 2, _, _) => {
@@ -179,7 +191,7 @@ pub fn decode(gb: &mut GameBoy) {
             op_nop()
         }, // EI
 
-        (3, 0..3, 4, _, _) => {
+        (3, 0..=3, 4, _, _) => {
             op_nop()
         }, // CALL cc[y], nn
 
@@ -226,11 +238,11 @@ fn op_inc8(gb: &mut GameBoy, reg: &Register8) {
 
     gb.cpu.set_flag(Flag::Z, gb.cpu.get_8(*reg) == 0);
     gb.cpu.set_flag(Flag::N, false);
-    gb.cpu.set_flag(Flag::H, ((gb.cpu.get_8(*reg) & 0x0F) == 0));
+    gb.cpu.set_flag(Flag::H, (gb.cpu.get_8(*reg) & 0x0F) == 0);
 }
 
 fn op_inc16(gb: &mut GameBoy, reg: Register16) {
-    gb.cpu.set_16(*reg, gb.cpu.get_16(*reg) + 1);
+    gb.cpu.set_16(reg, gb.cpu.get_16(reg) + 1);
 
     // TODO: Set flags ?
 }
@@ -362,6 +374,6 @@ fn alu_cp(gb: &mut GameBoy, operand: u8) {
 
     gb.cpu.set_flag(Flag::Z, res == 0);
     gb.cpu.set_flag(Flag::N, true);
-    gb.cpu.set_flag(Flag::H, ((gb.cpu.get_8(Register8::A) & 0xF) - (value & 0xF)) > 0);
+    gb.cpu.set_flag(Flag::H, ((gb.cpu.get_8(Register8::A) & 0xF) - (res & 0xF)) > 0);
     gb.cpu.set_flag(Flag::C, gb.cpu.get_8(Register8::A) < operand);
 }

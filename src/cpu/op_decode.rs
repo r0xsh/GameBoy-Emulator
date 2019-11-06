@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 use std::collections::HashMap;
 use cpu::Register8;
 use cpu::Register16;
@@ -8,7 +5,7 @@ use cpu::Flag;
 
 
 lazy_static! {
-    static pub ref TABLE_R: HashMap<u8, Register8> => {
+    static ref TABLE_R: HashMap<u8, Register8> = {
         let mut m = HashMap::new();
         m.insert(0, Register8::B);
         m.insert(1, Register8::C);
@@ -18,37 +15,41 @@ lazy_static! {
         m.insert(5, Register8::L);
         // m.insert(6, Register8::B); Uh oh this should be (HL) here
         m.insert(7, Register8::A);
-    }
+        m
+    };
 }
 
 lazy_static! {
-    static ref TABLE_RP: HashMap<u8, Register16> => {
+    static ref TABLE_RP: HashMap<u8, Register16> = {
         let mut m = HashMap::new();
         m.insert(0, Register16::BC);
         m.insert(1, Register16::DE);
         m.insert(2, Register16::HL);
         m.insert(3, Register16::SP);
-    }
+        m
+    };
 }
 
 lazy_static! {
-    static ref TABLE_RP2: HashMap<u8, Register16> => {
+    static ref TABLE_RP2: HashMap<u8, Register16> = {
         let mut m = HashMap::new();
         m.insert(0, Register16::BC);
         m.insert(1, Register16::DE);
         m.insert(2, Register16::HL);
         m.insert(3, Register16::AF);
-    }
+        m
+    };
 }
 
 lazy_static! {
-    static ref TABLE_CC: HashMap<u8, Flag> => {
+    static ref TABLE_CC: HashMap<u8, Flag> = {
         let mut m = HashMap::new();
         m.insert(0, Flag::NZ);
         m.insert(1, Flag::Z);
         m.insert(2, Flag::NC);
         m.insert(3, Flag::C);
-    }
+        m
+    };
 }
 
 pub fn get_x(opcode: u8) -> u8{
