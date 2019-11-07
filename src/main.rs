@@ -34,10 +34,12 @@ fn main() {
     // Plug all emulated componants into the GameBoy
     let mut gb = GameBoy::new(cpu, rom, mem);
 
-    gameboy::debugger::Debugger::new(&mut gb);
+    //gameboy::debugger::Debugger::new(&mut gb);
 
     for _ in 0..160 {
         cpu::opcodes::decode(&mut gb);
+        println!("{:?}", gb.cpu);
     }
+
 
 }

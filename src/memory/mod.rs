@@ -10,6 +10,7 @@
 
 const MEMORY_SIZE: usize = 65536; // 64 * 1024 (64KB)
 
+#[derive(Debug)]
 pub struct Memory(Vec<u8>);
 
 impl Memory {

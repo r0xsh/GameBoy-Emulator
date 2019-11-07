@@ -1,6 +1,6 @@
 use std::fmt;
+use ::Memory;
 pub mod opcodes;
-pub mod op_decode;
 pub mod opcode;
 
 #[derive(Clone, Copy)]
@@ -49,7 +49,6 @@ pub struct Cpu {
     pc: u16,
     timer: u8,
 }
-
 
 
 impl Cpu {
@@ -162,17 +161,6 @@ impl Cpu {
         }
     }
 
-    pub fn get_cc_table(&self, y: u8) -> bool {
-        match y {
-            0 => self.get_flag(Flag::NZ),
-            1 => self.get_flag(Flag::Z),
-            2 => self.get_flag(Flag::NC),
-            3 => self.get_flag(Flag::C),
-            _ => false,
-        }
-    }
-
-
     /// Set all the flags return to false
     pub fn reset_flags(&mut self) {
         self.set_flag(Flag::Z, false);
@@ -241,7 +229,8 @@ impl fmt::Debug for Cpu {
             > H        <{:#x}> ({6})\n\
             > L        <{:#x}> ({7})\n\
             > SP       <{:#x}> ({8})\n\
-            > PC       <{:#x}> ({9})",
+            > PC       <{:#x}> ({9})\n\
+            > C: {} H: {} N: {} Z: {} NC: {}, NZ: {}",
                self.get_8(Register8::A),
                self.get_8(Register8::F),
                self.get_8(Register8::B),
@@ -251,7 +240,13 @@ impl fmt::Debug for Cpu {
                self.get_8(Register8::H),
                self.get_8(Register8::L),
                self.get_16(Register16::SP),
-               self.get_16(Register16::PC))
+               self.get_16(Register16::PC),
+               self.get_flag(Flag::C),
+               self.get_flag(Flag::H),
+               self.get_flag(Flag::N),
+               self.get_flag(Flag::Z),
+               self.get_flag(Flag::NC),
+               self.get_flag(Flag::NZ))
     }
 }
 

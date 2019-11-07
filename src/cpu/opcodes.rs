@@ -1,4 +1,4 @@
-use ::{GameBoy, cpu};
+use ::GameBoy;
 use cpu::{Flag, Register16, Register8};
 use cpu::opcode::Opcode;
 
@@ -7,33 +7,25 @@ pub fn decode(gb: &mut GameBoy) {
     let mut op = Opcode::from(gb.cartridge.read_byte(gb.cpu.get_16(Register16::PC)));
     op.fetch_param(&gb);
 
-    println!("op = {:?}, pc = {}", op, gb.cpu.get_16(Register16::PC));
 
+    println!("op = {:?}, pc = {}", op, gb.cpu.get_16(Register16::PC));
 
     gb.cpu.inc_pc(op.length);
 
-    return;
     // Call a function who get the current opcode and a mutable gameboy instance
     // should incr the PC and returns arguments
 
-    let parsed_op = (
-        cpu::op_decode::get_x(op.opcode),
-        cpu::op_decode::get_y(op.opcode),
-        cpu::op_decode::get_z(op.opcode),
-        cpu::op_decode::get_p(op.opcode),
-        cpu::op_decode::get_q(op.opcode)
-    );
+
 
     // X, Y, Z, P, Q
-    match parsed_op {
+    match op.flag_slice() {
         // X = 0
         // Z = 0
         (0, 0, 0, _, _) => {
             op_nop()
         }, // NOOP
         (0, 1, 0, _, _) => {
-            // Register16::PC should be an argument instead
-            op_ld_mem16(gb, gb.mem.read_word(gb.cpu.get_16(Register16::PC)), gb.cpu.get_16(Register16::SP))
+            op_ld_mem16(gb, op.param.unwrap(), gb.cpu.get_16(Register16::SP))
         }, // LD (nn), SP
         (0, 2, 0, _, _) => {
             op_nop()
@@ -43,32 +35,19 @@ pub fn decode(gb: &mut GameBoy) {
             gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val) as u16);
         }, // JR d
         (0, 4..=7, 0, _, _) => {
-            if gb.cpu.get_cc_table(parsed_op.1 - 4) {
+            if gb.cpu.get_flag(cc!(op.y - 4)) {
                 let pc_val = gb.cpu.get_16(Register16::PC);
                 gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val) as u16);
             }
         }, // JR cc[y-4], d
         // Z = 1
         (0, _, 1, _, 0) => {
-            let mut reg: Option<Register16> = None;
-            match parsed_op.3 {
-                0 => reg = Some(Register16::BC),
-                1 => reg = Some(Register16::DE),
-                2 => reg = Some(Register16::HL),
-                3 => reg = Some(Register16::SP),
-                _ => {}
-            };
-            match reg {
-                Some(ref r) => {
-                    let operand = gb.mem.read_word(gb.cpu.get_16(Register16::PC));
-                    op_ld_reg16(gb, *r, operand);
-                }
-                None => {}
-            }
+            op_ld_reg16(gb, rp!(op.q), op.param.unwrap())
         }, // LD rp[p], nn
         (0, _, 1, _, 1) => {
-            op_nop()
+            op_add16(gb, Register16::HL, gb.cpu.get_16(rp!(op.p)))
         }, // ADD HL, rp[p]
+
         // Z = 2
         // Q = 0
         (0, _, 2, 0, 0) => {
@@ -102,16 +81,36 @@ pub fn decode(gb: &mut GameBoy) {
         }, // LD A, (HL-)
         // Z = 3
         (0, _, 3, _, 0) => {
-            // op_inc16(gb, cpu::op_decode::TABLE_RP[parsed_op.3]) // TODO: GET RP value from CPU
+            op_inc16(gb, rp!(op.p))
         }, // INC rp[p]
         (0, _, 3, _, 1) => {
-            op_nop()
+            op_dec16(gb, rp!(op.p))
         }, // DEC rp[p]
         // Z = 4
         (0, _, 4, _, _) => {
+            match r!(op.y) {
+                (Some(r8), None) => {
+                    op_inc8(gb, r8)
+                },
+                (None, Some(r16)) => {
+                    op_inc_mem(gb, gb.cpu.get_16(r16))
+                },
+                _ => unreachable!()
+            }
             // op_inc8(gb, cpu::op_decode::TABLE_R) // TODO: Get R value from CPU
         }, // INC r[y]
-        (0, _, 5, _, _) => op_nop(), // DEC r[y]
+        (0, _, 5, _, _) => {
+            match r!(op.y) {
+                (Some(r8), None) => {
+                    op_dec8(gb, r8)
+                },
+                (None, Some(r16)) => {
+                    op_dec_mem(gb, gb.cpu.get_16(r16))
+                },
+                _ => unreachable!()
+            }
+            // op_inc8(gb, cpu::op_decode::TABLE_R) // TODO: Get R value from CPU
+        }, // DEC r[y]
         (0, _, 6, _, _) => op_nop(), // LD r[y], n
 
         (0, 0, 7, _, _) => op_nop(), // RLCA
@@ -127,7 +126,7 @@ pub fn decode(gb: &mut GameBoy) {
         (1, _, _, _, _) => op_nop(), // CCF
         // X = 2
         (2, _, _, _, _) => {
-            call_alu_table_r(gb, parsed_op.2, parsed_op.1)
+            call_alu_table_r(gb, op.z, op.y)
         }, // alu[y] r[z]
         // X = 3
         (3, 0..=3, 0, _, _) => {
@@ -203,7 +202,7 @@ pub fn decode(gb: &mut GameBoy) {
         }, // CALL nn
 
         (3, _, 6, _, _) => {
-            exec_alu(gb, parsed_op.1, gb.cartridge.read_byte(gb.cpu.get_16(Register16::PC) + 1))
+            exec_alu(gb, op.y, gb.cartridge.read_byte(gb.cpu.get_16(Register16::PC) + 1))
         }, // alu[y] n
 
         (3, _, 7, _, _) => {
@@ -215,6 +214,22 @@ pub fn decode(gb: &mut GameBoy) {
 
 fn op_nop(){
     ()
+}
+
+fn inc(gb: &mut GameBoy, val: u8) -> u8 {
+    gb.cpu.set_flag(Flag::H, (val & 0x0F) == 0x0F);
+    let val = val + 1;
+    gb.cpu.set_flag(Flag::Z, val == 0);
+    gb.cpu.set_flag(Flag::N, false);
+    val
+}
+
+fn dec(gb: &mut GameBoy, val: u8) -> u8 {
+    gb.cpu.set_flag(Flag::H, val & 0x0F == 0);
+    let val = val - 1;
+    gb.cpu.set_flag(Flag::Z, val == 0);
+    gb.cpu.set_flag(Flag::N, true);
+    val
 }
 
 fn op_ld_reg8(gb: &mut GameBoy, reg: Register8, operand: u8) {
@@ -233,18 +248,59 @@ fn op_ld_mem16(gb: &mut GameBoy, address: u16, operand: u16) {
     gb.mem.write_word(address, operand);
 }
 
-fn op_inc8(gb: &mut GameBoy, reg: &Register8) {
-    gb.cpu.set_8(*reg, gb.cpu.get_8(*reg) + 1);
-
-    gb.cpu.set_flag(Flag::Z, gb.cpu.get_8(*reg) == 0);
-    gb.cpu.set_flag(Flag::N, false);
-    gb.cpu.set_flag(Flag::H, (gb.cpu.get_8(*reg) & 0x0F) == 0);
+fn op_inc8(gb: &mut GameBoy, reg: Register8) {
+    let res = inc(gb, gb.cpu.get_8(reg));
+    gb.cpu.set_8(reg, res);
 }
 
 fn op_inc16(gb: &mut GameBoy, reg: Register16) {
-    gb.cpu.set_16(reg, gb.cpu.get_16(reg) + 1);
+    let res = gb.cpu.get_16(reg) + 1;
+    gb.cpu.set_16(reg, res);
+}
 
-    // TODO: Set flags ?
+fn op_inc_mem(gb: &mut GameBoy, address: u16) {
+    let res = inc(gb, gb.mem.read_byte(address));
+    gb.mem.write_byte(address, res);
+}
+
+fn op_dec16(gb: &mut GameBoy, reg: Register16) {
+    let res = gb.cpu.get_16(reg) - 1;
+
+    gb.cpu.set_16(reg, res);
+}
+
+fn op_dec8(gb: &mut GameBoy, reg: Register8) {
+    let res = dec(gb, gb.cpu.get_8(reg));
+    gb.cpu.set_8(reg, res);
+}
+
+
+
+fn op_dec_mem(gb: &mut GameBoy, address: u16) {
+    let res = dec(gb, gb.mem.read_byte(address));
+    gb.mem.write_byte(address, res);
+}
+
+fn op_add8(gb: &mut GameBoy, reg: Register8, operand: u8) {
+    let res: u16 = (gb.cpu.get_8(reg) + operand) as u16;
+    let final_res: u8 = res as u8;
+
+    gb.cpu.set_flag(Flag::Z, final_res == 0);
+    gb.cpu.set_flag(Flag::N, false);
+    gb.cpu.set_flag(Flag::H, ((gb.cpu.get_8(reg) & 0xF) + (operand & 0xF)) > 0xF);
+    gb.cpu.set_flag(Flag::C, res > 0xFF);
+
+    gb.cpu.set_8(reg, res as u8)
+}
+
+fn op_add16(gb: &mut GameBoy, reg: Register16, operand: u16) {
+        let res: u32 = (gb.cpu.get_16(reg) + operand) as u32;
+
+        gb.cpu.set_flag(Flag::C, res > 0xFFFF);
+        gb.cpu.set_flag(Flag::H, ((gb.cpu.get_16(reg) & 0x0F) + (operand & 0x0F)) > 0x0F);
+        gb.cpu.set_flag(Flag::N, false);
+
+        gb.cpu.set_16(reg, res as u16);
 }
 
 pub fn call_alu_table_r(gb: &mut GameBoy, z: u8, y: u8) {
@@ -263,7 +319,7 @@ pub fn call_alu_table_r(gb: &mut GameBoy, z: u8, y: u8) {
 
 fn exec_alu(gb: &mut GameBoy, y: u8, operand: u8) {
     match y {
-        0 => alu_add_a(gb, operand),
+        0 => op_add8(gb, Register8::A, operand),
         1 => alu_adc_a(gb, operand),
         2 => alu_sub(gb, operand),
         3 => alu_sbc(gb, operand),
