@@ -62,7 +62,7 @@ impl From<u8> for Opcode {
             length: SIZE_TABLE[op as usize],
             param: None,
             x: (op & 0b1100_0000) as u8 >> 6,
-            y: y,
+            y,
             z: (op & 0b0000_0111) as u8,
             p: (y & 0b0000_0110) as u8 >> 1,
             q: (y & 0b0000_0001) as u8

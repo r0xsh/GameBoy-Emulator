@@ -22,92 +22,116 @@ pub fn decode(gb: &mut GameBoy) {
         // X = 0
         // Z = 0
         (0, 0, 0, _, _) => {
+            // NOOP
             op_nop()
-        }, // NOOP
+        },
         (0, 1, 0, _, _) => {
+            // LD (nn), SP
             op_ld_mem16(gb, op.param.unwrap(), gb.cpu.get_16(Register16::SP))
-        }, // LD (nn), SP
+        },
         (0, 2, 0, _, _) => {
+            // STOP
             op_nop()
-        }, // STOP
+        },
         (0, 3, 0, _, _) => {
+            // JR d
             let pc_val = gb.cpu.get_16(Register16::PC);
             gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val) as u16);
-        }, // JR d
+        },
         (0, 4..=7, 0, _, _) => {
+            // JR cc[y-4], d
             if gb.get_table_cc(op.y - 4) {
                 let pc_val = gb.cpu.get_16(Register16::PC);
                 gb.cpu.set_16(Register16::PC, pc_val + 1 + gb.mem.read_byte(pc_val) as u16);
             }
-        }, // JR cc[y-4], d
+        },
         // Z = 1
         (0, _, 1, _, 0) => {
+            // LD rp[p], nn
             op_ld_reg16(gb, op.q, op.param.unwrap())
-        }, // LD rp[p], nn
+        },
         (0, _, 1, _, 1) => {
+            // ADD HL, rp[p]
             op_add16(gb, Register16::HL, op.p)
-        }, // ADD HL, rp[p]
+        },
 
         // Z = 2
         // Q = 0
         (0, _, 2, 0, 0) => {
+            // LD (BC), A
             op_ld_mem8(gb, gb.cpu.get_16(Register16::BC), gb.cpu.get_8(Register8::A))
-        }, // LD (BC), A
+        },
         (0, _, 2, 1, 0)  => {
+            // LD (DE), A
             op_ld_mem8(gb, gb.cpu.get_16(Register16::DE), gb.cpu.get_8(Register8::A))
-        }, // LD (DE), A
+        },
         (0, _, 2, 2, 0)  => {
+            // LD (HL+), A
             op_ld_mem8(gb, gb.cpu.get_16(Register16::HL), gb.cpu.get_8(Register8::A));
             gb.cpu.set_16(Register16::HL, gb.cpu.get_16(Register16::HL) + 1);
-        }, // LD (HL+), A
+        },
         (0, _, 2, 3, 0)  => {
+            // LD (HL-), A
             op_ld_mem8(gb, gb.cpu.get_16(Register16::HL), gb.cpu.get_8(Register8::A));
             gb.cpu.set_16(Register16::HL, gb.cpu.get_16(Register16::HL) - 1);
-        }, // LD (HL-), A
+        },
         // Q = 1
         (0, _, 2, 0, 1)  => {
+            // LD A, (BC)
             op_ld_reg8(gb, Register8::A, gb.mem.read_byte(gb.cpu.get_16(Register16::BC)))
-        }, // LD A, (BC)
+        },
         (0, _, 2, 1, 1)  => {
+            // LD A, (DE)
             op_ld_reg8(gb, Register8::A, gb.mem.read_byte(gb.cpu.get_16(Register16::DE)))
-        }, // LD A, (DE)
+        },
         (0, _, 2, 2, 1)  => {
+            // LD A, (HL+)
             op_ld_reg8(gb, Register8::A, gb.mem.read_byte(gb.cpu.get_16(Register16::HL)));
             gb.cpu.set_16(Register16::HL, gb.cpu.get_16(Register16::HL) + 1);
-        }, // LD A, (HL+)
+        },
         (0, _, 2, 3, 1) => {
+            // LD A, (HL-)
             op_ld_reg8(gb, Register8::A, gb.mem.read_byte(gb.cpu.get_16(Register16::HL)));
             gb.cpu.set_16(Register16::HL, gb.cpu.get_16(Register16::HL) - 1);
-        }, // LD A, (HL-)
+        },
         // Z = 3
         (0, _, 3, _, 0) => {
+            // INC rp[p]
             op_inc16(gb, op.p)
-        }, // INC rp[p]
+        },
         (0, _, 3, _, 1) => {
+            // DEC rp[p]
             op_dec16(gb, op.p)
-        }, // DEC rp[p]
+        },
         // Z = 4
         (0, _, 4, _, _) => {
+            // INC r[y]
             op_inc8(gb, op.y)
-            // op_inc8(gb, cpu::op_decode::TABLE_R) // TODO: Get R value from CPU
-        }, // INC r[y]
+        },
         (0, _, 5, _, _) => {
+            // DEC r[y]
             op_dec8(gb, op.y)
-            // op_inc8(gb, cpu::op_decode::TABLE_R) // TODO: Get R value from CPU
-        }, // DEC r[y]
-        (0, _, 6, _, _) => op_nop(), // LD r[y], n
+        },
+        (0, _, 6, _, _) => {
+            // LD r[y], n
+            op_ld_8(gb, op.y, op.param.unwrap() as u8)
+        },
 
-        (0, 0, 7, _, _) => op_nop(), // RLCA
-        (0, 1, 7, _, _) => op_nop(), // RRCA
-        (0, 2, 7, _, _) => op_nop(), // RLA
-        (0, 3, 7, _, _) => op_nop(), // RRA
-        (0, 4, 7, _, _) => op_nop(), // DAA
-        (0, 5, 7, _, _) => op_nop(), // CPL
-        (0, 6, 7, _, _) => op_nop(), // SCF
-        (0, 7, 7, _, _) => op_nop(), // CCF
+        (0, 0, 7, _, _) => rlca(gb), // RLCA
+        (0, 1, 7, _, _) => rrca(gb), // RRCA
+        (0, 2, 7, _, _) => rla(gb), // RLA
+        (0, 3, 7, _, _) => rra(gb), // RRA
+        (0, 4, 7, _, _) => op_nop(), // DAA //TODO: Impl DAA
+        (0, 5, 7, _, _) => cpl(gb), // CPL
+        (0, 6, 7, _, _) => scf(gb), // SCF
+        (0, 7, 7, _, _) => ccf(gb), // CCF
         // X = 1
         (1, 6, 6, _, _) => op_nop(), // HALT
-        (1, _, _, _, _) => op_nop(), // CCF
+        (1, _, _, _, _) => {
+            // LD r[y], r[z]
+            let operand = gb.get_table_r(op.z);
+            op_ld_8(gb, op.y, operand);
+        },
         // X = 2
         (2, _, _, _, _) => {
             call_alu_table_r(gb, op.z, op.y)
@@ -152,14 +176,19 @@ pub fn decode(gb: &mut GameBoy) {
             op_nop()
         }, // LD (0xFF00+C), A
         (3, 5, 2, _, _) => {
-            op_ld_mem8(gb, gb.mem.read_word(gb.cpu.get_16(Register16::PC) + 1), gb.cpu.get_8(Register8::A))
-        }, // LD (nn), A
+            // LD (nn), A
+            let address = gb.mem.read_word(gb.cpu.get_16(Register16::PC) + 1);
+            let operand = gb.cpu.get_8(Register8::A);
+            op_ld_mem8(gb, address, operand)
+        },
         (3, 6, 2, _, _) => {
             op_nop()
         }, // LD A, (0xFF00+C)
         (3, 7, 2, _, _) => {
-            op_ld_reg8(gb, Register8::A, gb.mem.read_byte(gb.cpu.get_16(Register16::PC) + 1))
-        }, // LD A, (nn)
+            // LD A, (nn)
+            let operand = gb.mem.read_byte(gb.cpu.get_16(Register16::PC) + 1);
+            op_ld_reg8(gb, Register8::A, operand)
+        },
 
         (3, 0, 3, _, _) => {
             op_nop()
@@ -186,8 +215,9 @@ pub fn decode(gb: &mut GameBoy) {
         }, // CALL nn
 
         (3, _, 6, _, _) => {
+            // alu[y] n
             exec_alu(gb, op.y, gb.cartridge.read_byte(gb.cpu.get_16(Register16::PC) + 1))
-        }, // alu[y] n
+        },
 
         (3, _, 7, _, _) => {
             op_nop()
@@ -243,6 +273,9 @@ fn op_ld_mem16(gb: &mut GameBoy, address: u16, operand: u16) {
     gb.mem.write_word(address, operand);
 }
 
+fn op_ld_8(gb: &mut GameBoy, index: u8, operand: u8) {
+    gb.set_table_r(index, operand);
+}
 
 fn op_inc8(gb: &mut GameBoy, index: u8) {
     let res = add8(gb, gb.get_table_r(index), 1);
@@ -300,6 +333,101 @@ fn exec_alu(gb: &mut GameBoy, y: u8, operand: u8) {
         7 => alu_cp(gb, operand),
         _ => {},
     }
+}
+
+
+/* ------------------------
+
+ Assorted operations on accumulator/flags
+
+---------------------------*/
+
+/// RLCA rotates the A register to the left one place. The 7th bit is
+/// put back into the 0 position.  The 7th bit also goes to the carry flag.
+fn rlca(gb: &mut GameBoy) {
+    let a = gb.cpu.get_8(Register8::A);
+    let seventh = a >> 7;
+    let rotated = a << 1 | seventh;
+
+    gb.cpu.set_8(Register8::A, rotated);
+    gb.cpu.set_flag(Flag::C, seventh == 0b1);
+    gb.cpu.set_flag(Flag::N, false);
+    gb.cpu.set_flag(Flag::H, false);
+}
+
+/// The  register is shifted right by one,  and the 0 bit goes to the
+/// carry flag and to the 7th bit.  Flags apart from the carry are as for RLCA.
+fn rrca(gb: &mut GameBoy) {
+    let a = gb.cpu.get_8(Register8::A);
+    let first = a << 7;
+    let rotated = a >> 1 | first;
+
+    gb.cpu.set_8(Register8::A, rotated);
+    gb.cpu.set_flag(Flag::C, first == 0b1);
+    gb.cpu.set_flag(Flag::N, false);
+    gb.cpu.set_flag(Flag::H, false);
+}
+
+/// The  bits in the register are all rotated left,  the 7th bit goes
+/// to the carry flag and the carry flag goes to bit 0. Flags apart from the
+/// carry flag are as for RLCA.
+fn rla(gb: &mut GameBoy) {
+    let a = gb.cpu.get_8(Register8::A);
+    let carry = gb.cpu.get_flag(Flag::C) as u8;
+    let seventh = a >> 7;
+    let rotated = a << 1 | carry;
+
+    gb.cpu.set_8(Register8::A, rotated);
+    gb.cpu.set_flag(Flag::C, seventh == 0b1);
+    gb.cpu.set_flag(Flag::N, false);
+    gb.cpu.set_flag(Flag::H, false);
+}
+
+/// The register is shifted right by one, the 0 bit goes to the carry
+/// flag, and  the carry flag goes to bit 7. Flags apart from the
+/// carry flag are as for RLCA.
+fn rra(gb: &mut GameBoy) {
+    let a = gb.cpu.get_8(Register8::A);
+    let carry = gb.cpu.get_flag(Flag::C) as u8;
+    let first = a << 7;
+    let rotated = a >> 1 | carry;
+
+    gb.cpu.set_8(Register8::A, rotated);
+    gb.cpu.set_flag(Flag::C, first == 0b1);
+    gb.cpu.set_flag(Flag::N, false);
+    gb.cpu.set_flag(Flag::H, false);
+}
+
+fn daa(gb: &mut GameBoy) {
+}
+
+///CPL  complements the A register.  All 0's become 1's and all  1's
+///0's. The C, Z P and S flags are all unaffected. The N and H flags
+///are both set to 1.
+fn cpl(gb: &mut GameBoy) {
+    let a = gb.cpu.get_8(Register8::A);
+    gb.cpu.set_8(Register8::A, !a);
+    gb.cpu.set_flag(Flag::N, true);
+    gb.cpu.set_flag(Flag::H, true);
+}
+
+/// SCF sets the carry flag to 1.
+///The Z,  P and S flags are unaffected. The N and H flags are reset to 0.
+fn scf(gb: &mut GameBoy) {
+    gb.cpu.set_flag(Flag::C, true);
+    gb.cpu.set_flag(Flag::N, false);
+    gb.cpu.set_flag(Flag::H, false);
+
+}
+
+
+/// CCF complements the carry flag. If the flag was 1 it is now 0 and
+/// vice  versa.  The Z P and S flags are unaffected.  The N flag  is
+/// reset to 0. The H flag may be anything.
+fn ccf(gb: &mut GameBoy) {
+    let carry = gb.cpu.get_flag(Flag::C);
+    gb.cpu.set_flag(Flag::C, !carry);
+    gb.cpu.set_flag(Flag::N, false);
 }
 
 /* ------------------------
