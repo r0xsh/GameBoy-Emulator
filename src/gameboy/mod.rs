@@ -1,4 +1,3 @@
-pub mod debugger;
 use Cartridge;
 use Cpu;
 use Memory;

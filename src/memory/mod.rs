@@ -49,7 +49,7 @@ impl Memory {
     }
 
     pub fn write_word(&mut self, addr: u16, v: u16) {
-        self.write_byte(addr, high_byte!(v));
+        self.write_byte(addr + 1, high_byte!(v));
         self.write_byte(addr, low_byte!(v));
     }
 }

@@ -138,7 +138,9 @@ pub fn decode(gb: &mut GameBoy) {
         }, // alu[y] r[z]
         // X = 3
         (3, 0..=3, 0, _, _) => {
-            op_nop()
+            if gb.get_table_cc(op.y) {
+                op_ret(gb);
+            }
         }, // RET cc[y]
         (3, 4, 0, _, _) => {
             op_nop()
@@ -157,7 +159,7 @@ pub fn decode(gb: &mut GameBoy) {
             op_nop()
         }, // POP rp2[p]
         (3, _, 1, 0, 1) => {
-            op_nop()
+            op_ret(gb);
         }, // RET
         (3, _, 1, 1, 1) => {
             op_nop()
@@ -398,7 +400,7 @@ fn rra(gb: &mut GameBoy) {
     gb.cpu.set_flag(Flag::H, false);
 }
 
-fn daa(gb: &mut GameBoy) {
+fn daa(_gb: &mut GameBoy) {
 }
 
 ///CPL  complements the A register.  All 0's become 1's and all  1's
@@ -532,3 +534,53 @@ fn alu_cp(gb: &mut GameBoy, operand: u8) {
     gb.cpu.set_flag(Flag::H, ((gb.cpu.get_8(Register8::A) & 0xF) - (res & 0xF)) > 0);
     gb.cpu.set_flag(Flag::C, gb.cpu.get_8(Register8::A) < operand);
 }
+
+fn op_ret(gb: &mut GameBoy) {
+    let sp: u16 = gb.cpu.get_16(Register16::SP);
+    let value: u16 = reverse_endian!(gb.mem.read_word(sp));
+    gb.cpu.set_16(Register16::SP, sp + 2);
+    gb.cpu.set_16(Register16::PC, value);
+}
+
+#[test]
+fn ret() {
+    use cpu::Cpu;
+    use memory::Memory;
+    use cartridge::Cartridge;
+
+    let rom = Cartridge::empty(0xFFFF).unwrap();
+    let cpu = Cpu::new();
+    let mem = Memory::new();
+    let mut gb = GameBoy::new(cpu, rom, mem);
+
+    gb.cpu.set_16(Register16::PC, 0x3535);
+    gb.cpu.set_16(Register16::SP, 0x2000);
+    gb.mem.write_byte(0x2000, 0xB5);
+    gb.mem.write_byte(0x2001, 0x18);
+
+    op_ret(&mut gb);
+
+    assert_eq!(gb.cpu.get_16(Register16::SP), 0x2002);
+    assert_eq!(gb.cpu.get_16(Register16::PC), 0x18B5);
+}
+
+#[test]
+fn ld_nn_pp() {
+    use cpu::Cpu;
+    use memory::Memory;
+    use cartridge::Cartridge;
+
+    let rom = Cartridge::empty(0xFFFF).unwrap();
+    let cpu = Cpu::new();
+    let mem = Memory::new();
+    let mut gb = GameBoy::new(cpu, rom, mem);
+
+    gb.cpu.set_16(Register16::SP, 0x4644);
+    let value = gb.cpu.get_16(Register16::SP);
+
+    op_ld_mem16(&mut gb, 0x1000, value);
+
+    assert_eq!(gb.mem.read_byte(0x1000), 0x44);
+    assert_eq!(gb.mem.read_byte(0x1001), 0x46);
+}
+

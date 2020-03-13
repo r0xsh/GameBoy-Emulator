@@ -30,6 +30,11 @@ impl Cartridge {
         Ok(Box::new(Cartridge(rom, size)))
     }
 
+    pub fn empty(size: usize) -> io::Result<Box<Cartridge>> {
+        let rom: Vec<u8> = Vec::with_capacity(size);
+        Ok(Box::new(Cartridge(rom, size)))
+    }
+
     /// Read a byte from the rom
     pub fn read_byte(&self, addr: u16) -> u8 {
         self.0[addr as usize]
