@@ -4,8 +4,6 @@
 #[macro_use]
 extern crate lazy_static;
 
-extern crate ws;
-
 #[macro_use]
 mod utils;
 mod gameboy;
