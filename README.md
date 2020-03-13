@@ -2,8 +2,6 @@
 
 ![ゲームボーイ](http://i.imgur.com/gxJJMZ0.png)
 
-# The project is currently paused, I wait for the webassembly to evolve and continue this project with this technlogy
-
 # Ressources
 
 - http://marc.rawer.de/Gameboy/Docs/GBCPUman.pdf
@@ -15,6 +13,7 @@
 - http://www.z80.info/z80oplist.txt
 - http://z80-heaven.wikidot.com/opcode-reference-chart
 - http://clrhome.org/table/
+- https://web.archive.org/web/20191218021252/http://www.devrs.com/gb/files/opcodes.html
 
 #### Boot ROM Assembly
 
