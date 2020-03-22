@@ -1,22 +1,24 @@
+#![feature(optin_builtin_traits)]
 use Cartridge;
 use Cpu;
 use Memory;
 use cpu::{Register8, Register16, Flag};
 
 pub struct GameBoy {
-    pub cpu: Box<Cpu>,
-    pub cartridge: Box<Cartridge>,
-    pub mem: Box<Memory>,
+    pub cpu: Cpu,
+    pub cartridge: Cartridge,
+    pub mem: Memory,
 }
 
 
+
 impl GameBoy {
-    pub fn new(cpu: Box<Cpu>, cartridge: Box<Cartridge>, mem: Box<Memory>) -> Box<GameBoy> {
-        Box::new(GameBoy {
-            cpu: cpu,
-            cartridge: cartridge,
-            mem: mem,
-        })
+    pub fn new(cpu: Cpu, cartridge: Cartridge, mem: Memory) -> GameBoy {
+        GameBoy {
+            cpu,
+            cartridge,
+            mem,
+        }
     }
 
 

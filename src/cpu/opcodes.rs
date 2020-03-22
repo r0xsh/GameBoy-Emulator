@@ -229,7 +229,7 @@ pub fn decode(gb: &mut GameBoy) {
 }
 
 fn op_nop(){
-    ()
+    print!("nop")
 }
 
 fn add8(gb: &mut GameBoy, val: u8, add: u8) -> u8 {
