@@ -23,10 +23,15 @@ pub struct Cartridge(Vec<u8>, usize);
 
 impl Cartridge {
     /// Load rom file
-    pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Box<Cartridge>> {
+    pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Cartridge> {
         let mut rom: Vec<u8> = Vec::new();
         let mut file = File::open(path)?;
         let size = file.read_to_end(&mut rom)?;
+        Ok(Cartridge(rom, size))
+    }
+
+    pub fn empty(size: usize) -> io::Result<Box<Cartridge>> {
+        let rom: Vec<u8> = Vec::with_capacity(size);
         Ok(Box::new(Cartridge(rom, size)))
     }
 

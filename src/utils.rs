@@ -16,3 +16,27 @@ macro_rules! join_bytes {
         join
     })
 }
+
+#[macro_export]
+macro_rules! reverse_endian {
+    ($x: expr) => ({
+        let low = low_byte!($x);
+        let high = high_byte!($x);
+        join_bytes!(high, low)
+    })
+}
+
+
+#[macro_export]
+macro_rules! cc {
+    ($x: expr) => ({
+        match $x {
+            0 => Flag::NZ,
+            1 => Flag::Z,
+            2 => Flag::NC,
+            3 => Flag::C,
+            _ => unreachable!()
+        }
+    })
+}
+

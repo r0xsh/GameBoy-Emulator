@@ -10,16 +10,17 @@
 
 const MEMORY_SIZE: usize = 65536; // 64 * 1024 (64KB)
 
+#[derive(Debug)]
 pub struct Memory(Vec<u8>);
 
 impl Memory {
     /// Init a new memory unit
-    pub fn new() -> Box<Memory> {
+    pub fn new() -> Memory {
         let mut mem: Vec<u8> = Vec::with_capacity(MEMORY_SIZE);
         for _ in 0..MEMORY_SIZE {
             mem.push(0);
         }
-        Box::new(Memory(mem))
+        Memory(mem)
     }
 
     /// Read a byte from the memory
@@ -48,7 +49,7 @@ impl Memory {
     }
 
     pub fn write_word(&mut self, addr: u16, v: u16) {
-        self.write_byte(addr, high_byte!(v));
+        self.write_byte(addr + 1, high_byte!(v));
         self.write_byte(addr, low_byte!(v));
     }
 }
