@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 use std::path::Path;
+use join_bytes;
 
 const TITLE: (u16, u16) = (0x0134, 0x0143);
 const CARTRIDGE_TYPE: u16 = 0x0147;
@@ -31,13 +32,28 @@ impl Cartridge {
     }
 
     pub fn empty(size: usize) -> io::Result<Box<Cartridge>> {
-        let rom: Vec<u8> = Vec::with_capacity(size);
+        let mut rom: Vec<u8> = Vec::with_capacity(size);
+        for _ in 0..size {
+            rom.push(0);
+        }
         Ok(Box::new(Cartridge(rom, size)))
     }
 
     /// Read a byte from the rom
     pub fn read_byte(&self, addr: u16) -> u8 {
         self.0[addr as usize]
+    }
+
+    pub fn write_byte(&mut self, addr: u16, data: u8) {
+        self.0[addr as usize] = data;
+    }
+
+    pub fn write_bytes(&mut self, addr: u16, bytes: Vec<u8>) {
+        let mut ad = addr;
+        for b in bytes {
+            self.0[ad as usize] = b;
+            ad += 1;
+        }
     }
 
     pub fn read_word(&self, addr: u16) -> u16 {
