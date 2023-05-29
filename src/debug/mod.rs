@@ -1,7 +1,7 @@
 use gameboy::GameBoy;
-use rustyline::Editor;
-use std::fmt::format;
-use std::collections::HashSet;
+extern crate rustyline;
+
+use self::rustyline::Editor;
 
 pub fn debug(gb: &GameBoy) {
     let mut rl = Editor::<()>::new();
