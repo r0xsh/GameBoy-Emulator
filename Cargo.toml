@@ -3,5 +3,11 @@ name = "gameboy"
 version = "0.1.0"
 authors = ["Antoine BAGNAUD <bagnaud.antoine@gmail.com>"]
 [dependencies]
+bitlab = "1.1.0"
 lazy_static = "1.3.0"
 rustyline = "6.0.0"
+yap = "0.7.1"
+
+[lib]
+name = "gameboy_emu"
+path = "src/lib.rs"

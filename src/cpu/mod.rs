@@ -1,5 +1,9 @@
 use std::fmt;
-use ::Memory;
+use bitlab::SingleBits;
+use ::{high_byte, low_byte};
+use join_bytes;
+use ppu::{GpuMode, Ppu};
+
 pub mod opcodes;
 pub mod opcode;
 
@@ -34,6 +38,14 @@ pub enum Flag {
     NC,
 }
 
+pub enum IterFlag {
+    VBLANK,
+    LCDSTAT,
+    TIMER,
+    SERIAL,
+    JOYPAD
+}
+
 pub struct Cpu {
     /// Accumulator register
     a: u8,
@@ -48,25 +60,123 @@ pub struct Cpu {
     sp: u16,
     pc: u16,
     timer: u8,
+    iter_master: bool,
+    iter_enable: u8,
+    iter_flags: u8,
+    ticks: u64,
+    pub ppu: Ppu,
 }
 
 
 impl Cpu {
     /// Init a new Cpu instance
     pub fn new() -> Cpu {
-        Cpu {
-            a: 0x0,
-            f: 0x0,
-            b: 0x0,
-            c: 0x0,
-            d: 0x0,
-            e: 0x0,
-            h: 0x0,
-            l: 0x0,
-            sp: 0x00,
-            pc: 0x00,
-            timer: 0x0,
+        let mut c = Cpu {
+            a: 0,
+            f: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            h: 0,
+            l: 0,
+            sp: 0,
+            pc: 0,
+            timer: 0,
+            iter_master: false,
+            iter_enable: 0,
+            iter_flags: 0,
+            ticks: 0,
+            ppu: Ppu::new()
+        };
+
+        c
+    }
+
+    pub fn reset_no_bios(&mut self) {
+        self.a = 0x01;
+        self.f = 0xB0;
+        self.b = 0x01;
+        self.c = 0xB0;
+        self.d = 0x01;
+        self.e = 0xB0;
+        self.h = 0x01;
+        self.l = 0xB0;
+        self.sp = 0x01;
+        self.pc = 0xB0;
+        self.iter_master = true;
+        self.iter_flags = 0x0;
+        self.iter_enable = 0x0;
+    }
+
+    pub fn ppu_step(&mut self) {
+        match self.ppu.mode {
+            GpuMode::VRAM => {
+                if self.ppu.tick >= 172 {
+                    self.ppu.tick %= 172;
+                    self.ppu.mode = GpuMode::HBLANK;
+                }
+            }
+            GpuMode::OAM => {
+                if self.ppu.tick >= 80 {
+                    self.ppu.mode = GpuMode::VRAM;
+                    self.ppu.tick %= 80;
+                }
+            }
+            GpuMode::VBLANK => {
+                if self.ppu.tick >= 456 {
+                    self.ppu.scanline += 1;
+
+                    self.ppu.tick %= 456;
+
+                    if self.ppu.scanline > 154 {
+                        self.ppu.scanline = 0;
+                        self.ppu.mode = GpuMode::OAM;
+                    }
+
+                }
+            }
+            GpuMode::HBLANK => {
+                if self.ppu.tick >= 204 {
+                    self.ppu_hblank();
+
+                    if self.ppu.scanline == 144 {
+                        self.set_iter_flag(IterFlag::VBLANK, true);
+                        self.ppu.mode = GpuMode::VBLANK;
+                    } else {
+                        self.ppu.mode = GpuMode::OAM;
+                    }
+
+                    self.ppu.tick %= 204;
+                }
+            }
         }
+    }
+
+    pub fn ppu_hblank(&mut self) {
+        self.ppu.scanline += 1;
+    }
+
+    pub fn interrupt_step(&mut self) {
+        if self.get_iter_flag_enable(IterFlag::VBLANK) && self.get_iter_flag(IterFlag::VBLANK) {
+
+        }
+    }
+
+    pub fn handle_vblank_inter(&mut self) {
+        self.iter_master = false;
+    }
+
+    pub fn write_to_stack(&mut self, addr: u16) {
+
+    }
+
+    pub fn set_iter_master(&mut self, state: bool) {
+        self.iter_master = state;
+    }
+
+    pub fn get_iter_master(&self) -> bool {
+        self.iter_master
     }
 
     /// Get a 8bit value from register
@@ -130,6 +240,56 @@ impl Cpu {
             }
             Register16::SP => self.sp = v,
             Register16::PC => self.pc = v,
+        }
+    }
+
+    pub fn set_iter_flag(&mut self, flag: IterFlag, set: bool) {
+        match (flag, set) {
+            (IterFlag::VBLANK, true) => self.iter_flags = self.iter_flags | 0b1000_0000,
+            (IterFlag::LCDSTAT, true) => self.iter_flags = self.iter_flags | 0b0100_0000,
+            (IterFlag::TIMER, true) => self.iter_flags = self.iter_flags | 0b0010_0000,
+            (IterFlag::SERIAL, true) => self.iter_flags = self.iter_flags | 0b0001_0000,
+            (IterFlag::JOYPAD, true) => self.iter_flags = self.iter_flags | 0b0000_1000,
+            (IterFlag::VBLANK, false) => self.iter_flags = self.iter_flags & 0b1000_0000,
+            (IterFlag::LCDSTAT, false) => self.iter_flags = self.iter_flags & 0b0100_0000,
+            (IterFlag::TIMER, false) => self.iter_flags = self.iter_flags & 0b0010_0000,
+            (IterFlag::SERIAL, false) => self.iter_flags = self.iter_flags & 0b0001_0000,
+            (IterFlag::JOYPAD, false) => self.iter_flags = self.iter_flags & 0b0000_1000,
+        }
+    }
+
+    pub fn get_iter_flag(&self, flag: IterFlag) -> bool {
+        match flag {
+            IterFlag::VBLANK => ((self.iter_flags & 0b1000_0000) as u8 >> 7 ) == 1,
+            IterFlag::LCDSTAT => ((self.iter_flags & 0b0100_0000) as u8 >> 6 ) == 1,
+            IterFlag::TIMER => ((self.iter_flags & 0b0010_0000) as u8 >> 5 ) == 1,
+            IterFlag::SERIAL => ((self.iter_flags & 0b0001_0000) as u8 >> 4 ) == 1,
+            IterFlag::JOYPAD => ((self.iter_flags & 0b0000_1000) as u8 >> 3 ) == 1,
+        }
+    }
+
+    pub fn set_iter_flag_enable(&mut self, flag: IterFlag, set: bool) {
+        match (flag, set) {
+            (IterFlag::VBLANK, true) => self.iter_enable = self.iter_enable | 0b1000_0000,
+            (IterFlag::LCDSTAT, true) => self.iter_enable = self.iter_enable | 0b0100_0000,
+            (IterFlag::TIMER, true) => self.iter_enable = self.iter_enable | 0b0010_0000,
+            (IterFlag::SERIAL, true) => self.iter_enable = self.iter_enable | 0b0001_0000,
+            (IterFlag::JOYPAD, true) => self.iter_enable = self.iter_enable | 0b0000_1000,
+            (IterFlag::VBLANK, false) => self.iter_enable = self.iter_enable & 0b1000_0000,
+            (IterFlag::LCDSTAT, false) => self.iter_enable = self.iter_enable & 0b0100_0000,
+            (IterFlag::TIMER, false) => self.iter_enable = self.iter_enable & 0b0010_0000,
+            (IterFlag::SERIAL, false) => self.iter_enable = self.iter_enable & 0b0001_0000,
+            (IterFlag::JOYPAD, false) => self.iter_enable = self.iter_enable & 0b0000_1000,
+        }
+    }
+
+    pub fn get_iter_flag_enable(&self, flag: IterFlag) -> bool {
+        match flag {
+            IterFlag::VBLANK => ((self.iter_enable & 0b1000_0000) as u8 >> 7 ) == 1,
+            IterFlag::LCDSTAT => ((self.iter_enable & 0b0100_0000) as u8 >> 6 ) == 1,
+            IterFlag::TIMER => ((self.iter_enable & 0b0010_0000) as u8 >> 5 ) == 1,
+            IterFlag::SERIAL => ((self.iter_enable & 0b0001_0000) as u8 >> 4 ) == 1,
+            IterFlag::JOYPAD => ((self.iter_enable & 0b0000_1000) as u8 >> 3 ) == 1,
         }
     }
 
@@ -213,6 +373,14 @@ impl Cpu {
     pub fn inc_pc(&mut self, inc: u8) {
         self.pc += inc as u16;
     }
+
+    pub fn inc_ticks(&mut self, inc: u8) {
+        self.ticks += inc as u64;
+        if self.ppu.control.get_bit(0).unwrap() {
+            self.ppu.tick += inc as u64;
+        }
+        println!("added ticks +{} = {}", inc, self.ticks * 8);
+    }
 }
 
 
@@ -220,25 +388,17 @@ impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
                "=== CPU DEBUG ===\n\
-            > A        <{:#x}> ({0})\n\
-            > F (flag) <{:#x}> ({1})\n\
-            > B        <{:#x}> ({2})\n\
-            > C        <{:#x}> ({3})\n\
-            > D        <{:#x}> ({4})\n\
-            > E        <{:#x}> ({5})\n\
-            > H        <{:#x}> ({6})\n\
-            > L        <{:#x}> ({7})\n\
-            > SP       <{:#x}> ({8})\n\
-            > PC       <{:#x}> ({9})\n\
+            > AF        <{:#x}> ({0})\n\
+            > BC        <{:#x}> ({1})\n\
+            > DE        <{:#x}> ({2})\n\
+            > HL        <{:#x}> ({3})\n\
+            > SP       <{:#x}> ({4})\n\
+            > PC       <{:#x}> ({5})\n\
             > C: {} H: {} N: {} Z: {} NC: {}, NZ: {}",
-               self.get_8(Register8::A),
-               self.get_8(Register8::F),
-               self.get_8(Register8::B),
-               self.get_8(Register8::C),
-               self.get_8(Register8::D),
-               self.get_8(Register8::E),
-               self.get_8(Register8::H),
-               self.get_8(Register8::L),
+               self.get_16(Register16::AF),
+               self.get_16(Register16::BC),
+               self.get_16(Register16::DE),
+               self.get_16(Register16::HL),
                self.get_16(Register16::SP),
                self.get_16(Register16::PC),
                self.get_flag(Flag::C),
@@ -303,6 +463,8 @@ fn set_get() {
 #[test]
 fn flags() {
     let mut cpu = Cpu::new();
+
+    cpu.reset_flags();
 
     cpu.set_flag(Flag::Z, true);
     assert_eq!(cpu.get_8(Register8::F), 0b10000000);
